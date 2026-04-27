@@ -215,6 +215,14 @@ td.editable:hover{background:var(--blue-bg)!important}
 
 <!-- OVERVIEW -->
 <div id="sec-overview" class="section active">
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <select class="filter" id="overviewOnboardMonth" onchange="renderPaymentClosureStats()"><option value="">All onboarding months</option></select>
+    <select class="filter" id="overviewTeam" onchange="renderPaymentClosureStats()"><option value="">All teams</option></select>
+    <select class="filter" id="overviewAM" onchange="renderPaymentClosureStats()"><option value="">All AMs</option></select>
+    <select class="filter" id="overviewProgram" onchange="renderPaymentClosureStats()"><option value="">All programs</option></select>
+    <select class="filter" id="overviewStage" onchange="renderPaymentClosureStats()"><option value="">All stages</option></select>
+    <select class="filter" id="overviewIntent" onchange="renderPaymentClosureStats()"><option value="">All intents</option></select>
+  </div>
   <div class="metric-grid" id="overviewMetrics"></div>
   <div id="paymentClosureStats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px"></div>
   <div class="two-col">
@@ -227,6 +235,14 @@ td.editable:hover{background:var(--blue-bg)!important}
 
 <!-- FUNNEL -->
 <div id="sec-funnel" class="section">
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <select class="filter" id="funnelOnboardMonth" onchange="computeStats(); rebuildCharts();"><option value="">All onboarding months</option></select>
+    <select class="filter" id="funnelTeam" onchange="computeStats(); rebuildCharts();"><option value="">All teams</option></select>
+    <select class="filter" id="funnelAM" onchange="computeStats(); rebuildCharts();"><option value="">All AMs</option></select>
+    <select class="filter" id="funnelProgram" onchange="computeStats(); rebuildCharts();"><option value="">All programs</option></select>
+    <select class="filter" id="funnelStage" onchange="computeStats(); rebuildCharts();"><option value="">All stages</option></select>
+    <select class="filter" id="funnelIntent" onchange="computeStats(); rebuildCharts();"><option value="">All intents</option></select>
+  </div>
   <div class="metric-grid" id="funnelMetrics"></div>
   <div class="card">
     <div class="card-title">Conversion Funnel</div>
@@ -241,6 +257,14 @@ td.editable:hover{background:var(--blue-bg)!important}
 
 <!-- TEAMS -->
 <div id="sec-teams" class="section">
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <select class="filter" id="teamsOnboardMonth" onchange="computeStats(); rebuildCharts();"><option value="">All onboarding months</option></select>
+    <select class="filter" id="teamsTeam" onchange="computeStats(); rebuildCharts();"><option value="">All teams</option></select>
+    <select class="filter" id="teamsAM" onchange="computeStats(); rebuildCharts();"><option value="">All AMs</option></select>
+    <select class="filter" id="teamsProgram" onchange="computeStats(); rebuildCharts();"><option value="">All programs</option></select>
+    <select class="filter" id="teamsStage" onchange="computeStats(); rebuildCharts();"><option value="">All stages</option></select>
+    <select class="filter" id="teamsIntent" onchange="computeStats(); rebuildCharts();"><option value="">All intents</option></select>
+  </div>
   <div class="card"><div class="card-title">Deal Value by Team</div><div style="position:relative;height:180px"><canvas id="dealTeamChart"></canvas></div></div>
   <div class="card">
     <div class="card-title">Team Breakdown</div>
@@ -255,6 +279,14 @@ td.editable:hover{background:var(--blue-bg)!important}
 
 <!-- OUTREACH -->
 <div id="sec-outreach" class="section">
+  <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <select class="filter" id="outreachOnboardMonth" onchange="computeStats(); rebuildCharts();"><option value="">All onboarding months</option></select>
+    <select class="filter" id="outreachTeam" onchange="computeStats(); rebuildCharts();"><option value="">All teams</option></select>
+    <select class="filter" id="outreachAM" onchange="computeStats(); rebuildCharts();"><option value="">All AMs</option></select>
+    <select class="filter" id="outreachProgram" onchange="computeStats(); rebuildCharts();"><option value="">All programs</option></select>
+    <select class="filter" id="outreachStage" onchange="computeStats(); rebuildCharts();"><option value="">All stages</option></select>
+    <select class="filter" id="outreachIntent" onchange="computeStats(); rebuildCharts();"><option value="">All intents</option></select>
+  </div>
   <div class="metric-grid" id="outreachMetrics"></div>
   <div class="two-col">
     <div class="card"><div class="card-title">Seller Intent</div><div style="position:relative;height:200px"><canvas id="intentDonutChart"></canvas></div>
@@ -363,6 +395,8 @@ td.editable:hover{background:var(--blue-bg)!important}
         </tr></thead>
         <tbody id="sellerTbody"></tbody>
       </table>
+    <select class="filter" id="filterOnboardMonth" onchange="filterSellers()"><option value="">All onboarding months</option></select>
+    <select class="filter" id="filterIntent" onchange="filterSellers()"><option value="">All intents</option></select>
     </div>
     <div class="pagination">
       <div class="page-info" id="pageInfo"></div>
@@ -583,6 +617,25 @@ function populateOnboardingMonthFilter(selectId, rows) {
   return el.value;
 }
 
+function getFilteredSellers(prefix) {
+  let filtered = sellers;
+  const onboardSel = document.getElementById(prefix + 'OnboardMonth')?.value;
+  const teamSel = document.getElementById(prefix + 'Team')?.value;
+  const amSel = document.getElementById(prefix + 'AM')?.value;
+  const programSel = document.getElementById(prefix + 'Program')?.value;
+  const stageSel = document.getElementById(prefix + 'Stage')?.value;
+  const intentSel = document.getElementById(prefix + 'Intent')?.value;
+  
+  if(onboardSel) filtered = filtered.filter(s=>monthValue(s.onboarded)===onboardSel);
+  if(teamSel) filtered = filtered.filter(s=>s.team===teamSel);
+  if(amSel) filtered = filtered.filter(s=>s.am===amSel);
+  if(programSel) filtered = filtered.filter(s=>s.program===programSel);
+  if(stageSel) filtered = filtered.filter(s=>s.stage===stageSel);
+  if(intentSel) filtered = filtered.filter(s=>s.intent===intentSel);
+  
+  return filtered;
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  GOOGLE SHEETS SYNC CONFIGURATION
 //  Paste your Apps Script Web App URL below after deploying.
@@ -692,17 +745,29 @@ function intentClass(s){return INTENT_COLORS[s]||'badge-gray'}
 })();
 
 function filterSellers(){
+  // Populate all filter dropdowns
+  populateOnboardingMonthFilter('filterOnboardMonth', sellers);
+  populateFilterDropdown('filterTeam', sellers, 'team');
+  populateFilterDropdown('filterAM', sellers, 'am');
+  populateFilterDropdown('filterProgram', sellers, 'program');
+  populateFilterDropdown('filterStage', sellers, 'stage');
+  populateFilterDropdown('filterIntent', sellers, 'intent');
+  
   const q = document.getElementById('sellerSearch').value.toLowerCase();
+  const onboardMonth = document.getElementById('filterOnboardMonth').value;
   const team = document.getElementById('filterTeam').value;
   const stage = document.getElementById('filterStage').value;
   const am = document.getElementById('filterAM').value;
   const program = document.getElementById('filterProgram').value;
+  const intent = document.getElementById('filterIntent').value;
   filtered = sellers.filter(s=>{
     if(q){const store=(s.store||'').toLowerCase(),samm=(s.am||'').toLowerCase(),id=(s.id||'').toLowerCase();if(!store.includes(q)&&!samm.includes(q)&&!id.includes(q))return false;}
+    if(onboardMonth && monthValue(s.onboarded) !== onboardMonth) return false;
     if(team && s.team !== team) return false;
     if(stage && s.stage !== stage) return false;
     if(am && s.am !== am) return false;
     if(program && s.program !== program) return false;
+    if(intent && s.intent !== intent) return false;
     return true;
   });
   currentPage = 1;
@@ -828,6 +893,17 @@ function showSection(name,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   el.classList.add('active');
+  currentSection = name;
+  // Populate filters for the new section
+  if(name==='overview' || name==='funnel' || name==='teams' || name==='outreach') {
+    const prefix = name==='funnel'?'funnel':name==='teams'?'teams':name==='outreach'?'outreach':'overview';
+    populateOnboardingMonthFilter(prefix+'OnboardMonth', sellers);
+    populateFilterDropdown(prefix+'Team', sellers, 'team');
+    populateFilterDropdown(prefix+'AM', sellers, 'am');
+    populateFilterDropdown(prefix+'Program', sellers, 'program');
+    populateFilterDropdown(prefix+'Stage', sellers, 'stage');
+    populateFilterDropdown(prefix+'Intent', sellers, 'intent');
+  }
   if(name==='sellers') filterSellers();
   if(name==='monthly') renderMonthly();
   if(name==='overview') renderPaymentClosureStats();
@@ -839,14 +915,17 @@ const txtColor='rgba(100,100,100,0.6)';
 const gridColor='rgba(0,0,0,0.05)';
 const baseOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
 let charts = {};
+let currentSection = 'overview';
 
 function computeStats(){
-  const total = sellers.length;
+  const prefix = (currentSection==='overview'?'overview':currentSection==='funnel'?'funnel':currentSection==='teams'?'teams':currentSection==='outreach'?'outreach':'overview');
+  const workingData = (currentSection==='sellers'||currentSection==='monthly'||currentSection==='agency'?sellers:getFilteredSellers(prefix));
+  const total = workingData.length;
   const stageCount = {};
   ALL_STAGES.forEach(s=>stageCount[s]=0);
-  sellers.forEach(s=>{stageCount[s.stage]=(stageCount[s.stage]||0)+1;});
+  workingData.forEach(s=>{stageCount[s.stage]=(stageCount[s.stage]||0)+1;});
   const teamCount={},amCount={},programCount={},intentCount={},demoByCount={},dealsByTeam={},dealsByAM={};
-  sellers.forEach(s=>{
+  workingData.forEach(s=>{
     teamCount[s.team||'Unknown']=(teamCount[s.team||'Unknown']||0)+1;
     amCount[s.am||'Unknown']=(amCount[s.am||'Unknown']||0)+1;
     programCount[s.program||'Unknown']=(programCount[s.program||'Unknown']||0)+1;
@@ -855,7 +934,7 @@ function computeStats(){
     dealsByTeam[s.team||'Unknown']=(dealsByTeam[s.team||'Unknown']||0)+(s.dealAmount||0);
     dealsByAM[s.am||'Unknown']=(dealsByAM[s.am||'Unknown']||0)+(s.dealAmount||0);
   });
-  const totalDealValue = sellers.reduce((a,s)=>a+(s.dealAmount||0),0);
+  const totalDealValue = workingData.reduce((a,s)=>a+(s.dealAmount||0),0);
   return {total,stageCount,teamCount,amCount,programCount,intentCount,demoByCount,dealsByTeam,dealsByAM,totalDealValue};
 }
 
@@ -1474,7 +1553,16 @@ document.getElementById('agencyModal').addEventListener('click',function(e){if(e
 
 // ── OVERVIEW PAYMENT CLOSURE STATS ───────────────────────────────────────
 function renderPaymentClosureStats() {
-  const closedSellers = sellers.filter(s=>s.stage==='Payment Closed');
+  // Populate all filter dropdowns
+  populateOnboardingMonthFilter('overviewOnboardMonth', sellers);
+  populateFilterDropdown('overviewTeam', sellers, 'team');
+  populateFilterDropdown('overviewAM', sellers, 'am');
+  populateFilterDropdown('overviewProgram', sellers, 'program');
+  populateFilterDropdown('overviewStage', sellers, 'stage');
+  populateFilterDropdown('overviewIntent', sellers, 'intent');
+  
+  const filteredSellers = getFilteredSellers('overview');
+  const closedSellers = filteredSellers.filter(s=>s.stage==='Payment Closed');
   const totalAccounts = closedSellers.length;
   const totalRevenue = closedSellers.reduce((a,s)=>a+(+s.closedAmount||+s.dealAmount||0),0);
   const avgDeal = totalAccounts>0?Math.round(totalRevenue/totalAccounts):0;
