@@ -1048,6 +1048,7 @@ function renderMonthly(){
 
   // All months across all 3 maps
   const allMonths=[...new Set([...Object.keys(closureMap),...Object.keys(revenueMap),...Object.keys(mrrContribMap)])].sort();
+  const mrrMonths=allMonths.filter(m=>mrrContribMap[m]);
 
   const totalClosures=Object.values(closureMap).reduce((a,d)=>a+d.count,0);
   const totalVal=Object.values(revenueMap).reduce((a,d)=>a+d.totalVal,0);
@@ -1077,7 +1078,6 @@ function renderMonthly(){
     monthlyValueChartInst=new Chart(document.getElementById('monthlyValueChart'),{type:'bar',data:{labels:revMonths.map(fmtMonth),datasets:[{label:'Revenue',data:revMonths.map(m=>revenueMap[m].totalVal),backgroundColor:'#2563eb',borderRadius:4,borderSkipped:false}]},options:{...baseOpts,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`₹${ctx.raw.toLocaleString()}`}}},scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,callback:v=>fmtINR(v)},grid:{color:gridColor},border:{display:false}}}}});
   }
 
-  const mrrMonths=allMonths.filter(m=>mrrContribMap[m]);
   if(charts['monthlyMRRChart']){charts['monthlyMRRChart'].destroy();delete charts['monthlyMRRChart'];}
   if(mrrMonths.length>0){
     charts['monthlyMRRChart']=new Chart(document.getElementById('monthlyMRRChart'),{type:'bar',data:{labels:mrrMonths.map(fmtMonth),datasets:[{label:'MRR',data:mrrMonths.map(m=>Math.round(mrrContribMap[m].totalMRR)),backgroundColor:'#7c3aed',borderRadius:4,borderSkipped:false}]},options:{...baseOpts,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${fmtINR(ctx.raw)} MRR`}}},scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,callback:v=>fmtINR(v)},grid:{color:gridColor},border:{display:false}}}}});
