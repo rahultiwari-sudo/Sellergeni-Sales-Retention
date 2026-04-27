@@ -271,8 +271,12 @@ td.editable:hover{background:var(--blue-bg)!important}
 <div id="sec-monthly" class="section">
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <select class="filter" id="monthlyOnboardMonth" onchange="renderMonthly()"><option value="">All onboarding months</option></select>
+    <select class="filter" id="monthlyTeam" onchange="renderMonthly()"><option value="">All teams</option></select>
+    <select class="filter" id="monthlyAM" onchange="renderMonthly()"><option value="">All AMs</option></select>
+    <select class="filter" id="monthlyProgram" onchange="renderMonthly()"><option value="">All programs</option></select>
+    <select class="filter" id="monthlyStage" onchange="renderMonthly()"><option value="">All stages</option></select>
+    <select class="filter" id="monthlyIntent" onchange="renderMonthly()"><option value="">All intents</option></select>
     <select class="filter" id="monthlyYear" onchange="renderMonthly()"><option value="">All Years</option></select>
-    <span style="font-size:12px;color:var(--text3)">Filter by year to see monthly breakdown</span>
   </div>
   <div class="metric-grid" id="monthlyMetrics"></div>
 
@@ -540,6 +544,25 @@ function fmtMonth(ym) {
 
 function monthValue(dateValue) {
   return dateValue ? dateValue.slice(0, 7) : '';
+}
+
+function populateFilterDropdown(selectId, rows, field) {
+  const el = document.getElementById(selectId);
+  if (!el) return '';
+  const currentValue = el.value;
+  const values = [...new Set(rows.map(r => r[field]).filter(Boolean))].sort();
+  const placeholder = `All ${field}s`;
+  el.innerHTML = `<option value="">${placeholder}</option>`;
+  values.forEach(val => {
+    const option = document.createElement('option');
+    option.value = val;
+    option.textContent = val;
+    el.appendChild(option);
+  });
+  if (currentValue && values.includes(currentValue)) {
+    el.value = currentValue;
+  }
+  return el.value;
 }
 
 function populateOnboardingMonthFilter(selectId, rows) {
@@ -977,10 +1000,33 @@ function rebuildCharts(){
 
 // ---- MONTHLY TRACKER ----
 function renderMonthly(){
-  const yearSel = document.getElementById('monthlyYear').value;
   const fmtINR=v=>v>=100000?'₹'+(v/100000).toFixed(2)+'L':v>=1000?'₹'+(v/1000).toFixed(1)+'K':'₹'+Math.round(v).toLocaleString();
-  const onboardSel = populateOnboardingMonthFilter('monthlyOnboardMonth', sellers);
-  const scopedSellers = onboardSel ? sellers.filter(s=>monthValue(s.onboarded)===onboardSel) : sellers;
+  
+  // Populate all filter dropdowns
+  populateOnboardingMonthFilter('monthlyOnboardMonth', sellers);
+  populateFilterDropdown('monthlyTeam', sellers, 'team');
+  populateFilterDropdown('monthlyAM', sellers, 'am');
+  populateFilterDropdown('monthlyProgram', sellers, 'program');
+  populateFilterDropdown('monthlyStage', sellers, 'stage');
+  populateFilterDropdown('monthlyIntent', sellers, 'intent');
+  
+  // Get current filter selections
+  const onboardSel = document.getElementById('monthlyOnboardMonth').value;
+  const teamSel = document.getElementById('monthlyTeam').value;
+  const amSel = document.getElementById('monthlyAM').value;
+  const programSel = document.getElementById('monthlyProgram').value;
+  const stageSel = document.getElementById('monthlyStage').value;
+  const intentSel = document.getElementById('monthlyIntent').value;
+  const yearSel = document.getElementById('monthlyYear').value;
+  
+  // Apply all filters
+  let scopedSellers = sellers;
+  if(onboardSel) scopedSellers = scopedSellers.filter(s=>monthValue(s.onboarded)===onboardSel);
+  if(teamSel) scopedSellers = scopedSellers.filter(s=>s.team===teamSel);
+  if(amSel) scopedSellers = scopedSellers.filter(s=>s.am===amSel);
+  if(programSel) scopedSellers = scopedSellers.filter(s=>s.program===programSel);
+  if(stageSel) scopedSellers = scopedSellers.filter(s=>s.stage===stageSel);
+  if(intentSel) scopedSellers = scopedSellers.filter(s=>s.intent===intentSel);
 
   // All sellers with a closedDate
   const allClosed = scopedSellers.filter(s=>s.closedDate&&s.closedDate.length>=7);
