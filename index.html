@@ -216,12 +216,12 @@ td.editable:hover{background:var(--blue-bg)!important}
 <!-- OVERVIEW -->
 <div id="sec-overview" class="section active">
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <select class="filter" id="overviewOnboardMonth" onchange="renderPaymentClosureStats()"><option value="">All onboarding months</option></select>
-    <select class="filter" id="overviewTeam" onchange="renderPaymentClosureStats()"><option value="">All teams</option></select>
-    <select class="filter" id="overviewAM" onchange="renderPaymentClosureStats()"><option value="">All AMs</option></select>
-    <select class="filter" id="overviewProgram" onchange="renderPaymentClosureStats()"><option value="">All programs</option></select>
-    <select class="filter" id="overviewStage" onchange="renderPaymentClosureStats()"><option value="">All stages</option></select>
-    <select class="filter" id="overviewIntent" onchange="renderPaymentClosureStats()"><option value="">All intents</option></select>
+    <select class="filter" id="overviewOnboardMonth" onchange="refreshDashboardSection('overview')"><option value="">All onboarding months</option></select>
+    <select class="filter" id="overviewTeam" onchange="refreshDashboardSection('overview')"><option value="">All teams</option></select>
+    <select class="filter" id="overviewAM" onchange="refreshDashboardSection('overview')"><option value="">All AMs</option></select>
+    <select class="filter" id="overviewProgram" onchange="refreshDashboardSection('overview')"><option value="">All programs</option></select>
+    <select class="filter" id="overviewStage" onchange="refreshDashboardSection('overview')"><option value="">All stages</option></select>
+    <select class="filter" id="overviewIntent" onchange="refreshDashboardSection('overview')"><option value="">All intents</option></select>
   </div>
   <div class="metric-grid" id="overviewMetrics"></div>
   <div id="paymentClosureStats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px"></div>
@@ -236,12 +236,12 @@ td.editable:hover{background:var(--blue-bg)!important}
 <!-- FUNNEL -->
 <div id="sec-funnel" class="section">
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <select class="filter" id="funnelOnboardMonth" onchange="computeStats(); rebuildCharts();"><option value="">All onboarding months</option></select>
-    <select class="filter" id="funnelTeam" onchange="computeStats(); rebuildCharts();"><option value="">All teams</option></select>
-    <select class="filter" id="funnelAM" onchange="computeStats(); rebuildCharts();"><option value="">All AMs</option></select>
-    <select class="filter" id="funnelProgram" onchange="computeStats(); rebuildCharts();"><option value="">All programs</option></select>
-    <select class="filter" id="funnelStage" onchange="computeStats(); rebuildCharts();"><option value="">All stages</option></select>
-    <select class="filter" id="funnelIntent" onchange="computeStats(); rebuildCharts();"><option value="">All intents</option></select>
+    <select class="filter" id="funnelOnboardMonth" onchange="refreshDashboardSection('funnel')"><option value="">All onboarding months</option></select>
+    <select class="filter" id="funnelTeam" onchange="refreshDashboardSection('funnel')"><option value="">All teams</option></select>
+    <select class="filter" id="funnelAM" onchange="refreshDashboardSection('funnel')"><option value="">All AMs</option></select>
+    <select class="filter" id="funnelProgram" onchange="refreshDashboardSection('funnel')"><option value="">All programs</option></select>
+    <select class="filter" id="funnelStage" onchange="refreshDashboardSection('funnel')"><option value="">All stages</option></select>
+    <select class="filter" id="funnelIntent" onchange="refreshDashboardSection('funnel')"><option value="">All intents</option></select>
   </div>
   <div class="metric-grid" id="funnelMetrics"></div>
   <div class="card">
@@ -258,12 +258,12 @@ td.editable:hover{background:var(--blue-bg)!important}
 <!-- TEAMS -->
 <div id="sec-teams" class="section">
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <select class="filter" id="teamsOnboardMonth" onchange="computeStats(); rebuildCharts();"><option value="">All onboarding months</option></select>
-    <select class="filter" id="teamsTeam" onchange="computeStats(); rebuildCharts();"><option value="">All teams</option></select>
-    <select class="filter" id="teamsAM" onchange="computeStats(); rebuildCharts();"><option value="">All AMs</option></select>
-    <select class="filter" id="teamsProgram" onchange="computeStats(); rebuildCharts();"><option value="">All programs</option></select>
-    <select class="filter" id="teamsStage" onchange="computeStats(); rebuildCharts();"><option value="">All stages</option></select>
-    <select class="filter" id="teamsIntent" onchange="computeStats(); rebuildCharts();"><option value="">All intents</option></select>
+    <select class="filter" id="teamsOnboardMonth" onchange="refreshDashboardSection('teams')"><option value="">All onboarding months</option></select>
+    <select class="filter" id="teamsTeam" onchange="refreshDashboardSection('teams')"><option value="">All teams</option></select>
+    <select class="filter" id="teamsAM" onchange="refreshDashboardSection('teams')"><option value="">All AMs</option></select>
+    <select class="filter" id="teamsProgram" onchange="refreshDashboardSection('teams')"><option value="">All programs</option></select>
+    <select class="filter" id="teamsStage" onchange="refreshDashboardSection('teams')"><option value="">All stages</option></select>
+    <select class="filter" id="teamsIntent" onchange="refreshDashboardSection('teams')"><option value="">All intents</option></select>
   </div>
   <div class="card"><div class="card-title">Deal Value by Team</div><div style="position:relative;height:180px"><canvas id="dealTeamChart"></canvas></div></div>
   <div class="card">
@@ -280,12 +280,12 @@ td.editable:hover{background:var(--blue-bg)!important}
 <!-- OUTREACH -->
 <div id="sec-outreach" class="section">
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <select class="filter" id="outreachOnboardMonth" onchange="computeStats(); rebuildCharts();"><option value="">All onboarding months</option></select>
-    <select class="filter" id="outreachTeam" onchange="computeStats(); rebuildCharts();"><option value="">All teams</option></select>
-    <select class="filter" id="outreachAM" onchange="computeStats(); rebuildCharts();"><option value="">All AMs</option></select>
-    <select class="filter" id="outreachProgram" onchange="computeStats(); rebuildCharts();"><option value="">All programs</option></select>
-    <select class="filter" id="outreachStage" onchange="computeStats(); rebuildCharts();"><option value="">All stages</option></select>
-    <select class="filter" id="outreachIntent" onchange="computeStats(); rebuildCharts();"><option value="">All intents</option></select>
+    <select class="filter" id="outreachOnboardMonth" onchange="refreshDashboardSection('outreach')"><option value="">All onboarding months</option></select>
+    <select class="filter" id="outreachTeam" onchange="refreshDashboardSection('outreach')"><option value="">All teams</option></select>
+    <select class="filter" id="outreachAM" onchange="refreshDashboardSection('outreach')"><option value="">All AMs</option></select>
+    <select class="filter" id="outreachProgram" onchange="refreshDashboardSection('outreach')"><option value="">All programs</option></select>
+    <select class="filter" id="outreachStage" onchange="refreshDashboardSection('outreach')"><option value="">All stages</option></select>
+    <select class="filter" id="outreachIntent" onchange="refreshDashboardSection('outreach')"><option value="">All intents</option></select>
   </div>
   <div class="metric-grid" id="outreachMetrics"></div>
   <div class="two-col">
@@ -893,7 +893,6 @@ function showSection(name,el){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('sec-'+name).classList.add('active');
   el.classList.add('active');
-  currentSection = name;
   // Populate filters for the new section
   if(name==='overview' || name==='funnel' || name==='teams' || name==='outreach') {
     const prefix = name==='funnel'?'funnel':name==='teams'?'teams':name==='outreach'?'outreach':'overview';
@@ -904,9 +903,24 @@ function showSection(name,el){
     populateFilterDropdown(prefix+'Stage', sellers, 'stage');
     populateFilterDropdown(prefix+'Intent', sellers, 'intent');
   }
-  if(name==='sellers') filterSellers();
-  if(name==='monthly') renderMonthly();
-  if(name==='overview') renderPaymentClosureStats();
+  refreshDashboardSection(name);
+}
+
+function refreshDashboardSection(name){
+  currentSection = name;
+  if(name==='sellers') {
+    filterSellers();
+    return;
+  }
+  if(name==='monthly') {
+    renderMonthly();
+    return;
+  }
+  if(name==='overview' || name==='funnel' || name==='teams' || name==='outreach') {
+    rebuildCharts();
+    if(name==='overview') renderPaymentClosureStats();
+    return;
+  }
   if(name==='agency') { renderAgencyReports(); }
 }
 
@@ -935,7 +949,7 @@ function computeStats(){
     dealsByAM[s.am||'Unknown']=(dealsByAM[s.am||'Unknown']||0)+(s.dealAmount||0);
   });
   const totalDealValue = workingData.reduce((a,s)=>a+(s.dealAmount||0),0);
-  return {total,stageCount,teamCount,amCount,programCount,intentCount,demoByCount,dealsByTeam,dealsByAM,totalDealValue};
+  return {workingData,total,stageCount,teamCount,amCount,programCount,intentCount,demoByCount,dealsByTeam,dealsByAM,totalDealValue};
 }
 
 function mkChart(id,config){
@@ -945,7 +959,7 @@ function mkChart(id,config){
 
 function rebuildCharts(){
   const S = computeStats();
-  const {total,stageCount,teamCount,amCount,programCount,intentCount,demoByCount,dealsByTeam,dealsByAM,totalDealValue} = S;
+  const {workingData,total,stageCount,teamCount,amCount,programCount,intentCount,demoByCount,dealsByTeam,dealsByAM,totalDealValue} = S;
   const notContacted=stageCount['Not Contacted']||0;
   const inOutreach=stageCount['In Outreach']||0;
   const demoBooked=stageCount['Demo Booked']||0;
@@ -1014,7 +1028,7 @@ function rebuildCharts(){
   });
 
   // Reasons
-  const reasons=sellers.filter(s=>s.reasonNotQualified).map(s=>s.reasonNotQualified);
+  const reasons=workingData.filter(s=>s.reasonNotQualified).map(s=>s.reasonNotQualified);
   const rEl=document.getElementById('reasonList');
   rEl.innerHTML=reasons.length===0?'<span style="color:var(--text3)">No reasons recorded yet.</span>':reasons.map(r=>`<div style="padding:3px 0;border-bottom:1px solid var(--border)">• ${r}</div>`).join('');
 
@@ -1051,11 +1065,11 @@ function rebuildCharts(){
   // Team table
   const ttb=document.getElementById('teamTableBody');
   ttb.innerHTML=sortedTeams.map(([team,count])=>{
-    const inOut=sellers.filter(s=>s.team===team&&s.stage==='In Outreach').length;
-    const demosProp=sellers.filter(s=>s.team===team&&['Demo Booked','Demo Taken','Proposal Sent','Payment Link Sent'].includes(s.stage)).length;
-    const progs=[...new Set(sellers.filter(s=>s.team===team&&s.program).map(s=>s.program))].join(', ');
+    const inOut=workingData.filter(s=>s.team===team&&s.stage==='In Outreach').length;
+    const demosProp=workingData.filter(s=>s.team===team&&['Demo Booked','Demo Taken','Proposal Sent','Payment Link Sent'].includes(s.stage)).length;
+    const progs=[...new Set(workingData.filter(s=>s.team===team&&s.program).map(s=>s.program))].join(', ');
     const dv=dealsByTeam[team]||0;
-    const sh=Math.round(count/total*100);
+    const sh=Math.round(count/Math.max(total,1)*100);
     return`<tr><td>${team}</td><td>${count}</td><td>${progs||'—'}</td><td>${inOut}</td><td>${demosProp}</td><td>${dv?'₹'+(dv/1000).toFixed(0)+'K':'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:var(--surface2);border-radius:3px;height:5px;overflow:hidden;min-width:60px"><div style="width:${sh}%;height:100%;background:#2563eb;border-radius:3px"></div></div><span style="font-size:11px;color:var(--text2)">${sh}%</span></div></td></tr>`;
   }).join('');
 
