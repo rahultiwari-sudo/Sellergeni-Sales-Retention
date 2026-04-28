@@ -39,6 +39,13 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 .topbar-brand{font-size:15px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
 .topbar-brand span{font-weight:400;color:var(--text2)}
 .topbar-right{display:flex;align-items:center;gap:10px}
+.toolbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status-stack{display:flex;flex-direction:column;gap:2px;min-width:150px}
+.status-line{font-size:11px;line-height:1.2;color:var(--text3)}
+.status-line strong{font-weight:600;color:var(--text2)}
+.preset-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--surface)}
+.preset-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
+.preset-select{min-width:180px}
 .main{display:flex;flex:1}
 .sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
 .nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;border-radius:0;color:var(--text2);font-size:13px;transition:all 0.1s;border-left:3px solid transparent}
@@ -54,6 +61,8 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:
 /* METRIC CARDS */
 .metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
+.metric.clickable{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
+.metric.clickable:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.06);border-color:var(--blue)}
 .metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
 .metric-value{font-size:24px;font-weight:600;color:var(--text);line-height:1}
 .metric-sub{font-size:11px;color:var(--text3);margin-top:5px}
@@ -133,6 +142,11 @@ td.editable:hover{background:var(--blue-bg)!important}
 .modal-select,.modal-input{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;outline:none}
 .modal-select:focus,.modal-input:focus{border-color:var(--blue)}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.modal-subtitle{font-size:12px;color:var(--text2);margin-top:4px}
+.drill-table{width:100%;border-collapse:collapse;font-size:12px}
+.drill-table th,.drill-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+.drill-table th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);background:var(--surface2);position:sticky;top:0}
+.month-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 
 
 /* PROGRESS */
@@ -172,11 +186,25 @@ td.editable:hover{background:var(--blue-bg)!important}
     SellerGeni <span>Retention Pipeline</span>
   </div>
   <div class="topbar-right">
-    <span id="syncStatus" style="font-size:11px;color:var(--text3)"></span>
-    <span id="lastSaved" style="font-size:11px;color:var(--text3)"></span>
+    <div class="status-stack">
+      <span id="syncStatus" class="status-line"></span>
+      <span id="syncDetail" class="status-line"></span>
+    </div>
+    <div class="status-stack">
+      <span id="lastSaved" class="status-line"></span>
+      <span id="lastError" class="status-line"></span>
+    </div>
     <button class="btn" id="syncBtn" onclick="syncFromSheets()" title="Pull latest data from Google Sheets">&#8635; Sync</button>
+    <button class="btn" id="exportBtn" onclick="exportCurrentView()" title="Export the current view as CSV">⬇ Export CSV</button>
+    <select class="filter preset-select" id="presetSelect" onchange="applySelectedPreset()"><option value="">Saved filter presets</option></select>
+    <button class="btn" onclick="saveCurrentPreset()" title="Save the current filter set">+ Save Preset</button>
     
   </div>
+</div>
+
+<div class="preset-bar">
+  <div class="preset-label">Quick Presets</div>
+  <div id="presetChips" class="toolbar-actions"></div>
 </div>
 
 <div class="main">
@@ -303,6 +331,12 @@ td.editable:hover{background:var(--blue-bg)!important}
 <div id="sec-monthly" class="section">
   <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
     <select class="filter" id="monthlyOnboardMonth" onchange="renderMonthly()"><option value="">All onboarding months</option></select>
+    <div class="month-nav">
+      <button class="btn" onclick="shiftMonthFilter('monthlyOnboardMonth',-1,renderMonthly)">← Prev</button>
+      <button class="btn" onclick="shiftMonthFilter('monthlyOnboardMonth',1,renderMonthly)">Next →</button>
+      <button class="btn" onclick="setMonthFilterToCurrent('monthlyOnboardMonth',renderMonthly)">This Month</button>
+      <button class="btn" onclick="clearMonthFilter('monthlyOnboardMonth',renderMonthly)">Clear</button>
+    </div>
     <select class="filter" id="monthlyTeam" onchange="renderMonthly()"><option value="">All teams</option></select>
     <select class="filter" id="monthlyAM" onchange="renderMonthly()"><option value="">All AMs</option></select>
     <select class="filter" id="monthlyProgram" onchange="renderMonthly()"><option value="">All programs</option></select>
@@ -432,6 +466,12 @@ td.editable:hover{background:var(--blue-bg)!important}
   <div id="aTab-monthly" class="agency-tab" style="display:none">
     <div style="margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <select class="filter" id="agencyMonthlyOnboardMonth" onchange="renderAgencyMonthly()"><option value="">All onboarding months</option></select>
+      <div class="month-nav">
+        <button class="btn" onclick="shiftMonthFilter('agencyMonthlyOnboardMonth',-1,renderAgencyMonthly)">← Prev</button>
+        <button class="btn" onclick="shiftMonthFilter('agencyMonthlyOnboardMonth',1,renderAgencyMonthly)">Next →</button>
+        <button class="btn" onclick="setMonthFilterToCurrent('agencyMonthlyOnboardMonth',renderAgencyMonthly)">This Month</button>
+        <button class="btn" onclick="clearMonthFilter('agencyMonthlyOnboardMonth',renderAgencyMonthly)">Clear</button>
+      </div>
       <select class="filter" id="agencyMonthlyYear" onchange="renderAgencyMonthly()"><option value="">All Years</option></select>
       <span style="font-size:12px;color:var(--text3)">Filter by year to see monthly breakdown</span>
     </div>
@@ -562,6 +602,26 @@ td.editable:hover{background:var(--blue-bg)!important}
   </div>
 </div>
 
+<!-- DRILL-DOWN MODAL -->
+<div class="modal-overlay" id="drillModal">
+  <div class="modal" style="width:980px;max-width:96vw">
+    <div class="modal-title" id="drillTitle">Drill-down</div>
+    <div class="modal-subtitle" id="drillCount">0 records</div>
+    <div class="table-wrap" style="margin-top:14px;max-height:65vh;overflow:auto">
+      <div class="table-scroll">
+        <table class="drill-table">
+          <thead><tr><th>Account ID</th><th>Store</th><th>AM</th><th>Team</th><th>Program</th><th>Onboarded</th><th>Stage</th><th>Intent</th></tr></thead>
+          <tbody id="drillBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="exportDrilldownCsv()">Export CSV</button>
+      <button class="btn primary" onclick="closeDrillModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── Utility: Indian currency formatter ───────────────────────────
 function fmtINR(n) {
@@ -657,6 +717,317 @@ function getFilteredSellers(prefix) {
   return filtered;
 }
 
+function getSectionConfig(section) {
+  if (section === 'monthly') return { prefix: 'monthly', includeYear: true, includeSearch: false };
+  if (section === 'sellers') return { prefix: 'filter', includeYear: false, includeSearch: true };
+  if (section === 'overview') return { prefix: 'overview', includeYear: false, includeSearch: false };
+  if (section === 'funnel') return { prefix: 'funnel', includeYear: false, includeSearch: false };
+  if (section === 'teams') return { prefix: 'teams', includeYear: false, includeSearch: false };
+  if (section === 'outreach') return { prefix: 'outreach', includeYear: false, includeSearch: false };
+  if (section === 'agency-monthly') return { prefix: 'agencyMonthly', includeYear: true, includeSearch: false };
+  return { prefix: 'overview', includeYear: false, includeSearch: false };
+}
+
+function getSectionState(section) {
+  const cfg = getSectionConfig(section);
+  const state = {
+    onboardMonth: document.getElementById(cfg.prefix + 'OnboardMonth')?.value || '',
+    team: document.getElementById(cfg.prefix + 'Team')?.value || '',
+    am: document.getElementById(cfg.prefix + 'AM')?.value || '',
+    program: document.getElementById(cfg.prefix + 'Program')?.value || '',
+    stage: document.getElementById(cfg.prefix + 'Stage')?.value || '',
+    intent: document.getElementById(cfg.prefix + 'Intent')?.value || ''
+  };
+  if (cfg.includeYear) state.year = document.getElementById(cfg.prefix + 'Year')?.value || '';
+  if (cfg.includeSearch) state.search = document.getElementById('sellerSearch')?.value || '';
+  if (section === 'agency') {
+    state.stage = document.getElementById('agencyFilterStage')?.value || '';
+    state.am = document.getElementById('agencyFilterAM')?.value || '';
+    state.search = document.getElementById('agencySearch')?.value || '';
+  }
+  return state;
+}
+
+function applySectionState(section, state) {
+  const cfg = getSectionConfig(section);
+  const ids = [
+    [cfg.prefix + 'OnboardMonth', state.onboardMonth],
+    [cfg.prefix + 'Team', state.team],
+    [cfg.prefix + 'AM', state.am],
+    [cfg.prefix + 'Program', state.program],
+    [cfg.prefix + 'Stage', state.stage],
+    [cfg.prefix + 'Intent', state.intent]
+  ];
+  ids.forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value || '';
+  });
+  if (cfg.includeYear && state.year !== undefined) {
+    const yearEl = document.getElementById(cfg.prefix + 'Year');
+    if (yearEl) yearEl.value = state.year || '';
+  }
+  if (cfg.includeSearch && state.search !== undefined) {
+    const searchEl = document.getElementById('sellerSearch');
+    if (searchEl) searchEl.value = state.search || '';
+  }
+  if (section === 'agency' && state.search !== undefined) {
+    const searchEl = document.getElementById('agencySearch');
+    if (searchEl) searchEl.value = state.search || '';
+  }
+}
+
+function shiftMonthFilter(selectId, delta, rerender) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  const value = el.value || new Date().toISOString().slice(0, 7);
+  const [year, month] = value.split('-').map(Number);
+  const next = new Date(year, (month || 1) - 1 + delta, 1);
+  el.value = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+  rerender();
+}
+
+function setMonthFilterToCurrent(selectId, rerender) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.value = new Date().toISOString().slice(0, 7);
+  rerender();
+}
+
+function clearMonthFilter(selectId, rerender) {
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  el.value = '';
+  rerender();
+}
+
+function toCsv(rows) {
+  if (!rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  const escapeCsv = value => {
+    const text = value === null || value === undefined ? '' : String(value);
+    return /[",\n]/.test(text) ? '"' + text.replaceAll('"', '""') + '"' : text;
+  };
+  return [headers.join(','), ...rows.map(row => headers.map(header => escapeCsv(row[header])).join(','))].join('\n');
+}
+
+function downloadText(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(link.href);
+}
+
+function sellerExportRows(rows) {
+  return rows.map(s => ({
+    id: s.id || '',
+    store: s.store || '',
+    am: s.am || '',
+    team: s.team || '',
+    program: s.program || '',
+    onboarded: s.onboarded || '',
+    week: s.week || '',
+    stage: s.stage || '',
+    intent: s.intent || '',
+    demoBy: s.demoBy || '',
+    demoDate: s.demoDate || '',
+    dealAmount: s.dealAmount || 0,
+    closedDate: s.closedDate || '',
+    closedAmount: s.closedAmount || 0,
+    closedMonths: s.closedMonths || 0,
+    reasonNotQualified: s.reasonNotQualified || '',
+    comments: s.comments || ''
+  }));
+}
+
+function exportCurrentView() {
+  if (currentSection === 'monthly') {
+    const rows = [];
+    document.querySelectorAll('#monthlyClosureBody tr').forEach(tr => {
+      const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+      if (cells.length) rows.push({ type: 'closures', month: cells[0], count: cells[1], sellers: cells[2] });
+    });
+    document.querySelectorAll('#monthlyValueBody tr').forEach(tr => {
+      const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+      if (cells.length) rows.push({ type: 'revenue', month: cells[0], count: cells[1], totalValue: cells[2], avgDeal: cells[3], sellers: cells[4] });
+    });
+    document.querySelectorAll('#monthlyMRRBody tr').forEach(tr => {
+      const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+      if (cells.length) rows.push({ type: 'mrr', month: cells[0], mrr: cells[1], activeDeals: cells[2], detail: cells[3] });
+    });
+    downloadText('monthly-view.csv', toCsv(rows), 'text/csv;charset=utf-8');
+    return;
+  }
+
+  if (currentSection === 'agency') {
+    if (document.getElementById('aTab-monthly').style.display !== 'none') {
+      const rows = [];
+      document.querySelectorAll('#agencyMonthlyClosureBody tr').forEach(tr => {
+        const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+        if (cells.length) rows.push({ type: 'closures', month: cells[0], count: cells[1], sellers: cells[2] });
+      });
+      document.querySelectorAll('#agencyMonthlyValueBody tr').forEach(tr => {
+        const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+        if (cells.length) rows.push({ type: 'revenue', month: cells[0], count: cells[1], totalValue: cells[2], avgDeal: cells[3], sellers: cells[4] });
+      });
+      downloadText('agency-monthly-view.csv', toCsv(rows), 'text/csv;charset=utf-8');
+      return;
+    }
+    downloadText('agency-sellers.csv', toCsv(sellerExportRows(agencyFiltered)), 'text/csv;charset=utf-8');
+    return;
+  }
+
+  const rows = currentSection === 'sellers' ? filtered : computeStats().workingData;
+  downloadText(currentSection + '-sellers.csv', toCsv(sellerExportRows(rows)), 'text/csv;charset=utf-8');
+}
+
+function renderPresetControls() {
+  const select = document.getElementById('presetSelect');
+  const chips = document.getElementById('presetChips');
+  if (!select || !chips) return;
+  select.innerHTML = '<option value="">Saved filter presets</option>';
+  chips.innerHTML = '';
+  filterPresets.forEach((preset, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = preset.name + ' · ' + preset.section;
+    select.appendChild(option);
+
+    const chip = document.createElement('button');
+    chip.className = 'btn';
+    chip.textContent = preset.name + ' · ' + preset.section;
+    chip.onclick = () => applyPreset(index);
+    chips.appendChild(chip);
+  });
+}
+
+function syncPresetsToHash() {
+  if (!filterPresets.length) {
+    history.replaceState(null, '', location.pathname + location.search);
+    return;
+  }
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(filterPresets))));
+  history.replaceState(null, '', location.pathname + location.search + '#presets=' + encoded);
+}
+
+function loadPresetsFromHash() {
+  const hash = location.hash || '';
+  if (!hash.startsWith('#presets=')) {
+    filterPresets = [];
+    renderPresetControls();
+    return;
+  }
+  try {
+    const payload = hash.slice('#presets='.length);
+    const json = decodeURIComponent(escape(atob(payload)));
+    const parsed = JSON.parse(json);
+    filterPresets = Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    filterPresets = [];
+  }
+  renderPresetControls();
+}
+
+function saveCurrentPreset() {
+  const name = prompt('Preset name?');
+  if (!name) return;
+  const preset = {
+    name: name.trim(),
+    section: currentSection,
+    state: getSectionState(currentSection)
+  };
+  const existing = filterPresets.findIndex(item => item.name.toLowerCase() === preset.name.toLowerCase() && item.section === preset.section);
+  if (existing >= 0) filterPresets[existing] = preset;
+  else filterPresets.push(preset);
+  syncPresetsToHash();
+  renderPresetControls();
+  document.getElementById('presetSelect').value = String(existing >= 0 ? existing : filterPresets.length - 1);
+}
+
+function applyPreset(index) {
+  const preset = filterPresets[index];
+  if (!preset) return;
+  activePresetName = preset.name;
+  const target = preset.section;
+  if (currentSection !== target) {
+    const sectionOrder = ['overview', 'funnel', 'teams', 'outreach', 'monthly', 'sellers', 'agency'];
+    const node = document.querySelectorAll('.nav-item')[sectionOrder.indexOf(target)];
+    if (node) showSection(target, node);
+  }
+  applySectionState(target, preset.state || {});
+  refreshDashboardSection(target);
+}
+
+function applySelectedPreset() {
+  const select = document.getElementById('presetSelect');
+  if (!select || !select.value) return;
+  applyPreset(parseInt(select.value, 10));
+}
+
+function openSellerDrilldown(title, rows) {
+  drilldownTitle = title;
+  drilldownRows = rows.slice();
+  document.getElementById('drillTitle').textContent = title;
+  document.getElementById('drillCount').textContent = rows.length + ' records';
+  const body = document.getElementById('drillBody');
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:18px">No matching records.</td></tr>';
+  } else {
+    body.innerHTML = rows.slice(0, 250).map(s => `
+      <tr>
+        <td style="font-family:monospace;font-size:11px;color:var(--text3)">${s.id || '—'}</td>
+        <td style="font-weight:500">${s.store || '—'}</td>
+        <td>${s.am || '—'}</td>
+        <td>${s.team || '—'}</td>
+        <td>${s.program || '—'}</td>
+        <td>${s.onboarded || '—'}</td>
+        <td><span class="badge ${stageClass(s.stage)}">${s.stage || '—'}</span></td>
+        <td>${s.intent || '—'}</td>
+      </tr>
+    `).join('');
+  }
+  document.getElementById('drillModal').classList.add('open');
+}
+
+function closeDrillModal() {
+  document.getElementById('drillModal').classList.remove('open');
+}
+
+function exportDrilldownCsv() {
+  if (!drilldownRows.length) return;
+  downloadText((drilldownTitle || 'drilldown').toLowerCase().replaceAll(/[^a-z0-9]+/g, '-') + '.csv', toCsv(sellerExportRows(drilldownRows)), 'text/csv;charset=utf-8');
+}
+
+function openCurrentSectionDrill(label, kind, value) {
+  const rows = computeStats().workingData.filter(s => {
+    if (kind === 'total') return true;
+    if (kind === 'team') return (s.team || 'Unknown') === value;
+    if (kind === 'program') return (s.program || 'Unknown') === value;
+    if (kind === 'stage') return (s.stage || 'Unknown') === value;
+    if (kind === 'intent') return (s.intent || 'Unknown') === value;
+    if (kind === 'am') return (s.am || 'Unknown') === value;
+    return true;
+  });
+  openSellerDrilldown(label, rows);
+}
+
+function openMonthlyDrilldown(kind, month, rows) {
+  let sourceRows = rows || [];
+  if (kind === 'mrr' && (!sourceRows || !sourceRows.length)) {
+    const map = window.__monthlyDrillSource || {};
+    sourceRows = map[month]?.rows || [];
+  }
+  const title = kind === 'mrr' ? `MRR contributors · ${fmtMonth(month)}` : `${kind === 'revenue' ? 'Revenue' : 'Closures'} · ${fmtMonth(month)}`;
+  openSellerDrilldown(title, sourceRows);
+}
+
+function currentActiveTabIsMonthly() {
+  return currentSection === 'monthly' || (currentSection === 'agency' && document.getElementById('aTab-monthly')?.style.display !== 'none');
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  GOOGLE SHEETS SYNC CONFIGURATION
 //  Paste your Apps Script Web App URL below after deploying.
@@ -685,6 +1056,7 @@ async function syncFromSheets() {
     renderPaymentClosureStats();
     initAgencyFilters();
     filterAgency();
+    lastSuccessfulSyncText = new Date().toLocaleTimeString();
     setSyncStatus("ok","✓ Synced " + new Date().toLocaleTimeString());
   } catch(e) {
     setSyncStatus("error","✗ Sync failed: " + e.message);
@@ -701,6 +1073,7 @@ async function pushToSheets(action, data) {
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({ action, data })
     });
+    lastSuccessfulSyncText = new Date().toLocaleTimeString();
     setSyncStatus("ok","✓ Saved " + new Date().toLocaleTimeString());
   } catch(e) {
     setSyncStatus("error","✗ Save failed: " + e.message);
@@ -709,10 +1082,15 @@ async function pushToSheets(action, data) {
 
 function setSyncStatus(type, msg) {
   const el = document.getElementById("syncStatus");
+  const detail = document.getElementById("syncDetail");
+  const saved = document.getElementById("lastSaved");
+  const error = document.getElementById("lastError");
   if (!el) return;
   el.textContent = msg;
   el.style.color = type === "ok" ? "var(--green)" : type === "error" ? "var(--red)" : "var(--amber)";
-  document.getElementById("lastSaved").textContent = "";
+  if (detail) detail.textContent = type === "loading" ? "Waiting for Google Sheets response…" : type === "ok" ? "Live sync is healthy" : "Review the error below";
+  if (saved && (type === "ok" || lastSuccessfulSyncText)) saved.textContent = lastSuccessfulSyncText ? "Last saved: " + lastSuccessfulSyncText : "";
+  if (error) error.textContent = type === "error" ? msg : '';
 }
 
 function normaliseRow(r) {
@@ -738,6 +1116,11 @@ let currentPage = 1;
 const PER_PAGE = 50;
 let editIdx = null;
 let monthlyChartInst = null, monthlyValueChartInst = null;
+let lastSuccessfulSyncText = '';
+let filterPresets = [];
+let activePresetName = '';
+let drilldownRows = [];
+let drilldownTitle = '';
 
 const ALL_STAGES = ['Not Contacted','In Outreach','Demo Booked','Demo Taken','Proposal Sent','Payment Link Sent','Payment Closed','Not Interested'];
 
@@ -1003,24 +1386,24 @@ function rebuildCharts(){
 
   // --- OVERVIEW METRICS ---
   document.getElementById('overviewMetrics').innerHTML = `
-    <div class="metric blue"><div class="metric-label">Total Accounts</div><div class="metric-value">${total}</div><div class="metric-sub">Master Retention Pipeline</div></div>
-    <div class="metric"><div class="metric-label">POD-Chamath</div><div class="metric-value">${teamCount['POD-Chamath']||0}</div><div class="metric-sub">Accounts managed</div></div>
-    <div class="metric"><div class="metric-label">POD-Sanjay</div><div class="metric-value">${teamCount['POD-Sanjay']||0}</div><div class="metric-sub">Accounts managed</div></div>
-    <div class="metric amber"><div class="metric-label">Pipeline Value</div><div class="metric-value">₹${(totalDealValue/1000).toFixed(0)}K</div><div class="metric-sub">Active proposals & demos</div></div>
-    <div class="metric green"><div class="metric-label">Elevate Program</div><div class="metric-value">${programCount['Elevate']||0}</div><div class="metric-sub">Sellers enrolled</div></div>
-    <div class="metric"><div class="metric-label">ANA Program</div><div class="metric-value">${programCount['ANA']||0}</div><div class="metric-sub">Sellers enrolled</div></div>
+    <div class="metric blue clickable" onclick="openCurrentSectionDrill('Overview · Total Accounts','total')"><div class="metric-label">Total Accounts</div><div class="metric-value">${total}</div><div class="metric-sub">Master Retention Pipeline</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Overview · POD-Chamath','team','POD-Chamath')"><div class="metric-label">POD-Chamath</div><div class="metric-value">${teamCount['POD-Chamath']||0}</div><div class="metric-sub">Accounts managed</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Overview · POD-Sanjay','team','POD-Sanjay')"><div class="metric-label">POD-Sanjay</div><div class="metric-value">${teamCount['POD-Sanjay']||0}</div><div class="metric-sub">Accounts managed</div></div>
+    <div class="metric amber clickable" onclick="openCurrentSectionDrill('Overview · Pipeline Value','total')"><div class="metric-label">Pipeline Value</div><div class="metric-value">₹${(totalDealValue/1000).toFixed(0)}K</div><div class="metric-sub">Active proposals & demos</div></div>
+    <div class="metric green clickable" onclick="openCurrentSectionDrill('Overview · Elevate Program','program','Elevate')"><div class="metric-label">Elevate Program</div><div class="metric-value">${programCount['Elevate']||0}</div><div class="metric-sub">Sellers enrolled</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Overview · ANA Program','program','ANA')"><div class="metric-label">ANA Program</div><div class="metric-value">${programCount['ANA']||0}</div><div class="metric-sub">Sellers enrolled</div></div>
   `;
 
   // --- FUNNEL METRICS (all 8 stages) ---
   document.getElementById('funnelMetrics').innerHTML = `
-    <div class="metric"><div class="metric-label">Not Contacted</div><div class="metric-value">${notContacted}</div></div>
-    <div class="metric"><div class="metric-label">In Outreach</div><div class="metric-value">${inOutreach}</div></div>
-    <div class="metric blue"><div class="metric-label">Demo Booked</div><div class="metric-value">${demoBooked}</div></div>
-    <div class="metric purple"><div class="metric-label">Demo Taken</div><div class="metric-value">${demoTaken}</div></div>
-    <div class="metric amber"><div class="metric-label">Proposal Sent</div><div class="metric-value">${proposalSent}</div></div>
-    <div class="metric"><div class="metric-label">Payment Link Sent</div><div class="metric-value">${paymentLink}</div></div>
-    <div class="metric star"><div class="metric-icon">🏆</div><div class="metric-label">Payment Closed</div><div class="metric-value">${paymentClosed}</div><div class="metric-sub">Deals won ✓</div></div>
-    <div class="metric red"><div class="metric-label">Not Interested</div><div class="metric-value">${notInterested}</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Funnel · Not Contacted','stage','Not Contacted')"><div class="metric-label">Not Contacted</div><div class="metric-value">${notContacted}</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Funnel · In Outreach','stage','In Outreach')"><div class="metric-label">In Outreach</div><div class="metric-value">${inOutreach}</div></div>
+    <div class="metric blue clickable" onclick="openCurrentSectionDrill('Funnel · Demo Booked','stage','Demo Booked')"><div class="metric-label">Demo Booked</div><div class="metric-value">${demoBooked}</div></div>
+    <div class="metric purple clickable" onclick="openCurrentSectionDrill('Funnel · Demo Taken','stage','Demo Taken')"><div class="metric-label">Demo Taken</div><div class="metric-value">${demoTaken}</div></div>
+    <div class="metric amber clickable" onclick="openCurrentSectionDrill('Funnel · Proposal Sent','stage','Proposal Sent')"><div class="metric-label">Proposal Sent</div><div class="metric-value">${proposalSent}</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Funnel · Payment Link Sent','stage','Payment Link Sent')"><div class="metric-label">Payment Link Sent</div><div class="metric-value">${paymentLink}</div></div>
+    <div class="metric star clickable" onclick="openCurrentSectionDrill('Funnel · Payment Closed','stage','Payment Closed')"><div class="metric-icon">🏆</div><div class="metric-label">Payment Closed</div><div class="metric-value">${paymentClosed}</div><div class="metric-sub">Deals won ✓</div></div>
+    <div class="metric red clickable" onclick="openCurrentSectionDrill('Funnel · Not Interested','stage','Not Interested')"><div class="metric-label">Not Interested</div><div class="metric-value">${notInterested}</div></div>
   `;
 
   // --- FUNNEL VIZ ---
@@ -1042,12 +1425,12 @@ function rebuildCharts(){
   const interested=intentCount['Intrested']||0, followUp=intentCount['Follow up']||0;
   const totalDemos=Object.values(demoByCount).reduce((a,b)=>a+b,0);
   document.getElementById('outreachMetrics').innerHTML = `
-    <div class="metric blue"><div class="metric-label">Contacted</div><div class="metric-value">${contacted}</div><div class="metric-sub">${Math.round(contacted/Math.max(total,1)*100)}% of base</div></div>
-    <div class="metric green"><div class="metric-label">Interested</div><div class="metric-value">${interested}</div><div class="metric-sub">Seller intent</div></div>
-    <div class="metric"><div class="metric-label">Follow Up</div><div class="metric-value">${followUp}</div><div class="metric-sub">Need re-contact</div></div>
-    <div class="metric"><div class="metric-label">Demos Conducted</div><div class="metric-value">${totalDemos}</div></div>
-    <div class="metric amber"><div class="metric-label">Proposals Sent</div><div class="metric-value">${proposalSent}</div></div>
-    <div class="metric star"><div class="metric-icon">🏆</div><div class="metric-label">Payment Closed</div><div class="metric-value">${paymentClosed}</div><div class="metric-sub">Deals won ✓</div></div>
+    <div class="metric blue clickable" onclick="openCurrentSectionDrill('Outreach · Contacted','total')"><div class="metric-label">Contacted</div><div class="metric-value">${contacted}</div><div class="metric-sub">${Math.round(contacted/Math.max(total,1)*100)}% of base</div></div>
+    <div class="metric green clickable" onclick="openCurrentSectionDrill('Outreach · Interested','intent','Intrested')"><div class="metric-label">Interested</div><div class="metric-value">${interested}</div><div class="metric-sub">Seller intent</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Outreach · Follow Up','intent','Follow up')"><div class="metric-label">Follow Up</div><div class="metric-value">${followUp}</div><div class="metric-sub">Need re-contact</div></div>
+    <div class="metric clickable" onclick="openCurrentSectionDrill('Outreach · Demos Conducted','total')"><div class="metric-label">Demos Conducted</div><div class="metric-value">${totalDemos}</div></div>
+    <div class="metric amber clickable" onclick="openCurrentSectionDrill('Outreach · Proposals Sent','stage','Proposal Sent')"><div class="metric-label">Proposals Sent</div><div class="metric-value">${proposalSent}</div></div>
+    <div class="metric star clickable" onclick="openCurrentSectionDrill('Outreach · Payment Closed','stage','Payment Closed')"><div class="metric-icon">🏆</div><div class="metric-label">Payment Closed</div><div class="metric-value">${paymentClosed}</div><div class="metric-sub">Deals won ✓</div></div>
   `;
 
   // Conversion rates
@@ -1213,9 +1596,10 @@ function renderMonthly(){
       const targetMonth=`${ty}-${String(tm).padStart(2,'0')}`;
       // only include if matches year filter (or no filter)
       if(yearSel&&!targetMonth.startsWith(yearSel))continue;
-      if(!mrrContribMap[targetMonth])mrrContribMap[targetMonth]={totalMRR:0,deals:[],activeDealCount:0};
+      if(!mrrContribMap[targetMonth])mrrContribMap[targetMonth]={totalMRR:0,deals:[],activeDealCount:0,rows:[]};
       mrrContribMap[targetMonth].totalMRR+=runRate;
       mrrContribMap[targetMonth].activeDealCount++;
+      mrrContribMap[targetMonth].rows.push(s);
       mrrContribMap[targetMonth].deals.push({
         store:s.store,
         closedMonth:s.closedDate.slice(0,7),
@@ -1236,6 +1620,7 @@ function renderMonthly(){
   const latestMRRMonth=mrrMonths.length?[...mrrMonths].sort().pop():null;
   const actualMRR=latestMRRMonth&&mrrContribMap[latestMRRMonth]?Math.round(mrrContribMap[latestMRRMonth].totalMRR):0;
   const onboardLabel = onboardSel ? fmtMonth(onboardSel) : 'All onboarding months';
+  window.__monthlyDrillSource = mrrContribMap;
 
   // ── METRICS ──────────────────────────────────────────────────────────
   document.getElementById('monthlyMetrics').innerHTML=`
@@ -1271,7 +1656,7 @@ function renderMonthly(){
     cb.innerHTML=[...closureMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{
       const d=closureMap[m];
       const sellerList=d.sellers.slice(0,4).join(', ')+(d.sellers.length>4?` +${d.sellers.length-4} more`:'');
-      return`<tr><td style="font-weight:500">${fmtMonth(m)}</td><td><span class="badge badge-green">${d.count}</span></td><td style="font-size:12px;color:var(--text2)">${sellerList}</td></tr>`;
+      return`<tr style="cursor:pointer" onclick="openMonthlyDrilldown('closures','${m}',sellers.filter(s=>s.closedDate&&s.closedDate.startsWith('${m}')))" title="Open sellers closed in ${fmtMonth(m)}"><td style="font-weight:500">${fmtMonth(m)}</td><td><span class="badge badge-green">${d.count}</span></td><td style="font-size:12px;color:var(--text2)">${sellerList}</td></tr>`;
     }).join('');
   }
 
@@ -1284,7 +1669,7 @@ function renderMonthly(){
       const d=revenueMap[m];
       const avg=d.count?Math.round(d.totalVal/d.count):0;
       const top=d.sellers.sort((a,b)=>b.val-a.val).slice(0,3).map(x=>x.store).join(', ')+(d.sellers.length>3?` +${d.sellers.length-3} more`:'');
-      return`<tr><td style="font-weight:500">${fmtMonth(m)}</td><td>${d.count}</td><td style="font-weight:600;color:var(--blue-text)">${fmtINR(d.totalVal)}</td><td style="color:var(--text2)">${avg?fmtINR(avg):'—'}</td><td style="font-size:12px;color:var(--text2)">${top}</td></tr>`;
+      return`<tr style="cursor:pointer" onclick="openMonthlyDrilldown('revenue','${m}',sellers.filter(s=>s.closedDate&&s.closedDate.startsWith('${m}')))" title="Open sellers contributing revenue in ${fmtMonth(m)}"><td style="font-weight:500">${fmtMonth(m)}</td><td>${d.count}</td><td style="font-weight:600;color:var(--blue-text)">${fmtINR(d.totalVal)}</td><td style="color:var(--text2)">${avg?fmtINR(avg):'—'}</td><td style="font-size:12px;color:var(--text2)">${top}</td></tr>`;
     }).join('');
   }
 
@@ -1301,7 +1686,7 @@ function renderMonthly(){
       let detail='';
       if(newDeals.length) detail+=`<span style="color:var(--green-text)">New: ${newDeals.map(x=>x.store.split(' - ')[0]+'(₹'+x.runRate.toLocaleString()+'/mo)').join(', ')}</span>`;
       if(carryDeals.length) detail+=(detail?'  |  ':'')+'<span style="color:var(--blue-text)">Carry: '+carryDeals.map(x=>x.store.split(' - ')[0]+'(₹'+x.runRate.toLocaleString()+')').join(', ')+'</span>';
-      return`<tr>
+      return`<tr style="cursor:pointer" onclick="openMonthlyDrilldown('mrr','${m}')" title="Open sellers active in ${fmtMonth(m)}">
         <td style="font-weight:500">${fmtMonth(m)}</td>
         <td style="font-weight:600;color:var(--purple-text)">${fmtINR(Math.round(d.totalMRR))}</td>
         <td style="text-align:center">${d.activeDealCount}</td>
@@ -1472,9 +1857,9 @@ function renderAgencyMonthly() {
     agencyMonthlyValueChartInst=new Chart(document.getElementById('agencyMonthlyValueChart'),{type:'bar',data:{labels:revMonths.map(fmtMonth),datasets:[{data:revMonths.map(m=>revenueMap[m].totalVal),backgroundColor:'#7c3aed',borderRadius:4,borderSkipped:false}]},options:{...baseOpts,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`₹${ctx.raw.toLocaleString()}`}}},scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,callback:v=>fmtINR(v)},grid:{color:gridColor},border:{display:false}}}}});
   }
   const cb=document.getElementById('agencyMonthlyClosureBody');
-  cb.innerHTML=closureMonths.length?[...closureMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=closureMap[m];const sl=d.sellers.slice(0,4).join(', ')+(d.sellers.length>4?` +${d.sellers.length-4} more`:'');return`<tr><td style="font-weight:500">${fmtMonth(m)}</td><td><span class="badge badge-green">${d.count}</span></td><td style="font-size:12px;color:var(--text2)">${sl}</td></tr>`;}).join(''):`<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">No closures yet.</td></tr>`;
+  cb.innerHTML=closureMonths.length?[...closureMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=closureMap[m];const sl=d.sellers.slice(0,4).join(', ')+(d.sellers.length>4?` +${d.sellers.length-4} more`:'' );return`<tr style="cursor:pointer" onclick="openSellerDrilldown('Agency closures · ${fmtMonth(m)}',agencySellers.filter(s=>s.closedDate&&s.closedDate.startsWith('${m}')))"><td style="font-weight:500">${fmtMonth(m)}</td><td><span class="badge badge-green">${d.count}</span></td><td style="font-size:12px;color:var(--text2)">${sl}</td></tr>`;}).join(''):`<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">No closures yet.</td></tr>`;
   const vb=document.getElementById('agencyMonthlyValueBody');
-  vb.innerHTML=revMonths.length?[...revMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=revenueMap[m];const avg=d.count?Math.round(d.totalVal/d.count):0;const top=d.sellers.sort((a,b)=>b.val-a.val).slice(0,3).map(x=>x.store).join(', ');return`<tr><td style="font-weight:500">${fmtMonth(m)}</td><td>${d.count}</td><td style="font-weight:600;color:var(--blue-text)">${fmtINR(d.totalVal)}</td><td>${avg?fmtINR(avg):'—'}</td><td style="font-size:12px;color:var(--text2)">${top}</td></tr>`;}).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No revenue data yet.</td></tr>`;
+  vb.innerHTML=revMonths.length?[...revMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=revenueMap[m];const avg=d.count?Math.round(d.totalVal/d.count):0;const top=d.sellers.sort((a,b)=>b.val-a.val).slice(0,3).map(x=>x.store).join(', ');return`<tr style="cursor:pointer" onclick="openSellerDrilldown('Agency revenue · ${fmtMonth(m)}',agencySellers.filter(s=>s.closedDate&&s.closedDate.startsWith('${m}')))"><td style="font-weight:500">${fmtMonth(m)}</td><td>${d.count}</td><td style="font-weight:600;color:var(--blue-text)">${fmtINR(d.totalVal)}</td><td>${avg?fmtINR(avg):'—'}</td><td style="font-size:12px;color:var(--text2)">${top}</td></tr>`;}).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No revenue data yet.</td></tr>`;
 }
 
 // ── AGENCY SELLERS TABLE ──────────────────────────────────────────────────
@@ -1604,6 +1989,7 @@ function closeAgencyModal() {
   agencyEditIdx=null;
 }
 document.getElementById('agencyModal').addEventListener('click',function(e){if(e.target===this)closeAgencyModal()});
+document.getElementById('drillModal').addEventListener('click',function(e){if(e.target===this)closeDrillModal()});
 
 
 // ── OVERVIEW PAYMENT CLOSURE STATS ───────────────────────────────────────
@@ -1636,19 +2022,23 @@ function renderPaymentClosureStats() {
 }
 
 // Initial build
+loadPresetsFromHash();
+renderPresetControls();
 rebuildCharts();
 filterSellers();
 renderPaymentClosureStats();
 initAgencyFilters();
 filterAgency();
+setSyncStatus('loading', SHEETS_URL ? 'Waiting for Google Sheets sync…' : '⚠ Add your Apps Script URL to enable sync');
 
 // Auto-sync from Google Sheets on load (if URL is configured)
 if (SHEETS_URL) {
   syncFromSheets();
 } else {
-  document.getElementById('syncStatus').textContent = '⚠ Add your Apps Script URL to enable sync';
-  document.getElementById('syncStatus').style.color = 'var(--amber)';
+  setSyncStatus('error', '⚠ Add your Apps Script URL to enable sync');
 }
+
+window.addEventListener('hashchange', loadPresetsFromHash);
 </script>
 </body>
 </html>
