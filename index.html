@@ -492,6 +492,33 @@ td.editable:hover{background:var(--blue-bg)!important}
         <tbody id="agencyMonthlyValueBody"></tbody>
       </table></div>
     </div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-title">3 · Monthly Run Rate (₹) — MRR = Σ (Deal ÷ Closed Months)</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Each deal contributes <strong>Deal Amount ÷ Closed Months</strong> recurring revenue per month. MRR for a month = sum of run-rate from all deals active in that month.</div>
+        <div style="position:relative;height:220px;margin-bottom:16px"><canvas id="agencyMonthlyMRRChart"></canvas></div>
+        <div class="table-scroll"><table>
+          <thead><tr><th>Month</th><th>New MRR (₹)</th><th>Active Deals</th><th>MRR Contribution Detail</th></tr></thead>
+          <tbody id="agencyMonthlyMRRBody"></tbody>
+        </table></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px;background:var(--green-bg);border-color:var(--green)">
+          <div class="card-title" style="color:var(--green-text)">Current Actual MRR</div>
+          <div id="agencyActualMRRValue" style="font-size:32px;font-weight:700;color:var(--green-text);margin:8px 0"></div>
+          <div id="agencyActualMRRMonth" style="font-size:12px;color:var(--green-text);opacity:.8;margin-bottom:12px"></div>
+          <div id="agencyActualMRRBreakdown" style="font-size:12px;color:var(--green-text);line-height:1.8;border-top:1px solid var(--green);padding-top:10px"></div>
+        </div>
+        <div class="card" style="background:var(--blue-bg);border-color:var(--blue)">
+          <div class="card-title" style="color:var(--blue-text)">How MRR is Calculated</div>
+          <div style="font-size:12px;color:var(--blue-text);line-height:1.9">
+            <div>📌 <strong>Deal MRR</strong> = Deal Amount ÷ Closed Months</div>
+            <div>📌 A deal closed for <strong>3 months</strong> contributes its run-rate to each of those 3 months</div>
+            <div>📌 <strong>Actual MRR</strong> = Latest month's own MRR <strong>+</strong> overlapping run-rate from prior months still active</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- SELLERS LIST SUB-TAB -->
@@ -873,6 +900,10 @@ function exportCurrentView() {
         const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
         if (cells.length) rows.push({ type: 'revenue', month: cells[0], count: cells[1], totalValue: cells[2], avgDeal: cells[3], sellers: cells[4] });
       });
+      document.querySelectorAll('#agencyMonthlyMRRBody tr').forEach(tr => {
+        const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim());
+        if (cells.length) rows.push({ type: 'mrr', month: cells[0], mrr: cells[1], activeDeals: cells[2], detail: cells[3] });
+      });
       downloadText('agency-monthly-view.csv', toCsv(rows), 'text/csv;charset=utf-8');
       return;
     }
@@ -1021,6 +1052,16 @@ function openMonthlyDrilldown(kind, month, rows) {
     sourceRows = map[month]?.rows || [];
   }
   const title = kind === 'mrr' ? `MRR contributors · ${fmtMonth(month)}` : `${kind === 'revenue' ? 'Revenue' : 'Closures'} · ${fmtMonth(month)}`;
+  openSellerDrilldown(title, sourceRows);
+}
+
+function openAgencyMonthlyDrilldown(kind, month, rows) {
+  let sourceRows = rows || [];
+  if (kind === 'mrr' && (!sourceRows || !sourceRows.length)) {
+    const map = window.__agencyMonthlyDrillSource || {};
+    sourceRows = map[month]?.rows || [];
+  }
+  const title = kind === 'mrr' ? `Agency MRR contributors · ${fmtMonth(month)}` : `${kind === 'revenue' ? 'Agency revenue' : 'Agency closures'} · ${fmtMonth(month)}`;
   openSellerDrilldown(title, sourceRows);
 }
 
@@ -1741,6 +1782,7 @@ let agencyEditIdx = null;
 let agencyIntentChartInst = null;
 let agencyMonthlyChartInst = null;
 let agencyMonthlyValueChartInst = null;
+let agencyMonthlyMRRChartInst = null;
 
 function saveAgencyData() {
   if (SHEETS_URL) pushToSheets("save_agency", agencySellers);
@@ -1833,15 +1875,37 @@ function renderAgencyMonthly() {
   }
   const closedSellers = scopedAgency.filter(s=>s.stage==='Payment Closed'&&s.closedDate&&(!yearSel||s.closedDate.startsWith(yearSel)));
   const allClosed = scopedAgency.filter(s=>s.dealAmount>0&&(!yearSel||s.closedDate?.startsWith(yearSel)));
-  const closureMap={}, revenueMap={};
+  const closureMap={}, revenueMap={}, mrrContribMap={};
   closedSellers.forEach(s=>{const m=s.closedDate.slice(0,7);if(!closureMap[m])closureMap[m]={count:0,sellers:[]};closureMap[m].count++;closureMap[m].sellers.push(s.store);});
   allClosed.forEach(s=>{const m=(s.closedDate||new Date().toISOString()).slice(0,7);if(!revenueMap[m])revenueMap[m]={count:0,totalVal:0,sellers:[]};revenueMap[m].count++;revenueMap[m].totalVal+=(+s.dealAmount||0);revenueMap[m].sellers.push({store:s.store,val:+s.dealAmount||0});});
-  const allMonths=[...new Set([...Object.keys(closureMap),...Object.keys(revenueMap)])].sort();
+  allClosed.forEach(s=>{
+    const dealVal=(+s.dealAmount||0)+(+s.closedAmount||0);
+    const months=Math.max(1,+s.closedMonths||1);
+    const runRate=dealVal/months;
+    const [cy,cm]=s.closedDate.slice(0,7).split('-').map(Number);
+    for(let offset=0;offset<months;offset++){
+      let tm=cm+offset, ty=cy;
+      while(tm>12){tm-=12;ty++;}
+      const targetMonth=`${ty}-${String(tm).padStart(2,'0')}`;
+      if(yearSel&&!targetMonth.startsWith(yearSel))continue;
+      if(!mrrContribMap[targetMonth])mrrContribMap[targetMonth]={totalMRR:0,deals:[],activeDealCount:0,rows:[]};
+      mrrContribMap[targetMonth].totalMRR+=runRate;
+      mrrContribMap[targetMonth].activeDealCount++;
+      mrrContribMap[targetMonth].rows.push(s);
+      mrrContribMap[targetMonth].deals.push({store:s.store,closedMonth:s.closedDate.slice(0,7),runRate:Math.round(runRate),months,offset});
+    }
+  });
+  const allMonths=[...new Set([...Object.keys(closureMap),...Object.keys(revenueMap),...Object.keys(mrrContribMap)])].sort();
+  const mrrMonths=allMonths.filter(m=>mrrContribMap[m]);
   const totalClosures=closedSellers.length, totalVal=allClosed.reduce((a,s)=>a+(+s.dealAmount||0),0);
+  const latestMRRMonth=mrrMonths.length?[...mrrMonths].sort().pop():null;
+  const actualMRR=latestMRRMonth&&mrrContribMap[latestMRRMonth]?Math.round(mrrContribMap[latestMRRMonth].totalMRR):0;
   const onboardLabel = onboardSel ? fmtMonth(onboardSel) : 'All onboarding months';
+  window.__agencyMonthlyDrillSource = mrrContribMap;
   document.getElementById('agencyMonthlyMetrics').innerHTML=`
     <div class="metric green"><div class="metric-label">Total Closures</div><div class="metric-value">${totalClosures}</div><div class="metric-sub">${onboardLabel}${yearSel?` · ${yearSel}`:''}</div></div>
     <div class="metric amber"><div class="metric-label">Total Revenue</div><div class="metric-value">${fmtINR(totalVal)}</div><div class="metric-sub">${onboardLabel}${yearSel?` · ${yearSel}`:''}</div></div>
+    <div class="metric blue"><div class="metric-label">Current MRR</div><div class="metric-value">${fmtINR(actualMRR)}</div><div class="metric-sub">${latestMRRMonth?`As of ${fmtMonth(latestMRRMonth)}`:'No closed deals yet'}</div></div>
     <div class="metric"><div class="metric-label">Active Months</div><div class="metric-value">${allMonths.length}</div></div>
   `;
   const txtColor=getComputedStyle(document.documentElement).getPropertyValue('--text2').trim()||'#6b6860';
@@ -1849,6 +1913,7 @@ function renderAgencyMonthly() {
   const closureMonths=allMonths.filter(m=>closureMap[m]);
   if(agencyMonthlyChartInst){agencyMonthlyChartInst.destroy();agencyMonthlyChartInst=null;}
   if(agencyMonthlyValueChartInst){agencyMonthlyValueChartInst.destroy();agencyMonthlyValueChartInst=null;}
+  if(agencyMonthlyMRRChartInst){agencyMonthlyMRRChartInst.destroy();agencyMonthlyMRRChartInst=null;}
   if(closureMonths.length>0) {
     agencyMonthlyChartInst=new Chart(document.getElementById('agencyMonthlyChart'),{type:'bar',data:{labels:closureMonths.map(fmtMonth),datasets:[{data:closureMonths.map(m=>closureMap[m].count),backgroundColor:'#16a34a',borderRadius:4,borderSkipped:false}]},options:{...baseOpts,plugins:{legend:{display:false}},scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,stepSize:1},grid:{color:gridColor},border:{display:false}}}}});
   }
@@ -1856,10 +1921,18 @@ function renderAgencyMonthly() {
   if(revMonths.length>0) {
     agencyMonthlyValueChartInst=new Chart(document.getElementById('agencyMonthlyValueChart'),{type:'bar',data:{labels:revMonths.map(fmtMonth),datasets:[{data:revMonths.map(m=>revenueMap[m].totalVal),backgroundColor:'#7c3aed',borderRadius:4,borderSkipped:false}]},options:{...baseOpts,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`₹${ctx.raw.toLocaleString()}`}}},scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,callback:v=>fmtINR(v)},grid:{color:gridColor},border:{display:false}}}}});
   }
+  if(mrrMonths.length>0) {
+    agencyMonthlyMRRChartInst=new Chart(document.getElementById('agencyMonthlyMRRChart'),{type:'bar',data:{labels:mrrMonths.map(fmtMonth),datasets:[{label:'MRR',data:mrrMonths.map(m=>Math.round(mrrContribMap[m].totalMRR)),backgroundColor:'#7c3aed',borderRadius:4,borderSkipped:false}]},options:{...baseOpts,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${fmtINR(ctx.raw)} MRR`}}},scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,callback:v=>fmtINR(v)},grid:{color:gridColor},border:{display:false}}}}});
+  }
   const cb=document.getElementById('agencyMonthlyClosureBody');
   cb.innerHTML=closureMonths.length?[...closureMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=closureMap[m];const sl=d.sellers.slice(0,4).join(', ')+(d.sellers.length>4?` +${d.sellers.length-4} more`:'' );return`<tr style="cursor:pointer" onclick="openSellerDrilldown('Agency closures · ${fmtMonth(m)}',agencySellers.filter(s=>s.closedDate&&s.closedDate.startsWith('${m}')))"><td style="font-weight:500">${fmtMonth(m)}</td><td><span class="badge badge-green">${d.count}</span></td><td style="font-size:12px;color:var(--text2)">${sl}</td></tr>`;}).join(''):`<tr><td colspan="3" style="text-align:center;color:var(--text3);padding:20px">No closures yet.</td></tr>`;
   const vb=document.getElementById('agencyMonthlyValueBody');
   vb.innerHTML=revMonths.length?[...revMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=revenueMap[m];const avg=d.count?Math.round(d.totalVal/d.count):0;const top=d.sellers.sort((a,b)=>b.val-a.val).slice(0,3).map(x=>x.store).join(', ');return`<tr style="cursor:pointer" onclick="openSellerDrilldown('Agency revenue · ${fmtMonth(m)}',agencySellers.filter(s=>s.closedDate&&s.closedDate.startsWith('${m}')))"><td style="font-weight:500">${fmtMonth(m)}</td><td>${d.count}</td><td style="font-weight:600;color:var(--blue-text)">${fmtINR(d.totalVal)}</td><td>${avg?fmtINR(avg):'—'}</td><td style="font-size:12px;color:var(--text2)">${top}</td></tr>`;}).join(''):`<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">No revenue data yet.</td></tr>`;
+  const mb=document.getElementById('agencyMonthlyMRRBody');
+  mb.innerHTML=mrrMonths.length?[...mrrMonths].sort((a,b)=>b.localeCompare(a)).map(m=>{const d=mrrContribMap[m];const newDeals=d.deals.filter(x=>x.offset===0);const carryDeals=d.deals.filter(x=>x.offset>0);let detail='';if(newDeals.length) detail+=`<span style="color:var(--green-text)">New: ${newDeals.map(x=>x.store.split(' - ')[0]+'(₹'+x.runRate.toLocaleString()+'/mo)').join(', ')}</span>`;if(carryDeals.length) detail+=(detail?'  |  ':'')+'<span style="color:var(--blue-text)">Carry: '+carryDeals.map(x=>x.store.split(' - ')[0]+'(₹'+x.runRate.toLocaleString()+')').join(', ')+'</span>';return`<tr style="cursor:pointer" onclick="openAgencyMonthlyDrilldown('mrr','${m}')" title="Open sellers active in ${fmtMonth(m)}"><td style="font-weight:500">${fmtMonth(m)}</td><td style="font-weight:600;color:var(--purple-text)">${fmtINR(Math.round(d.totalMRR))}</td><td style="text-align:center">${d.activeDealCount}</td><td style="font-size:11px;color:var(--text2)">${detail||'—'}</td></tr>`;}).join(''):`<tr><td colspan="4" style="text-align:center;color:var(--text3);padding:20px">No MRR data yet. Add Deal Amount and Closed Months to compute run-rate.</td></tr>`;
+  document.getElementById('agencyActualMRRValue').textContent=fmtINR(actualMRR);
+  document.getElementById('agencyActualMRRMonth').textContent=latestMRRMonth?`As of ${fmtMonth(latestMRRMonth)}`:'No closed deals yet';
+  document.getElementById('agencyActualMRRBreakdown').textContent=latestMRRMonth&&mrrContribMap[latestMRRMonth]?`Active deals: ${mrrContribMap[latestMRRMonth].activeDealCount}`:'Add deals with Closed Date and Closed Months to see MRR.';
 }
 
 // ── AGENCY SELLERS TABLE ──────────────────────────────────────────────────
