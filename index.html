@@ -147,6 +147,16 @@ td.editable:hover{background:var(--blue-bg)!important}
 .drill-table th,.drill-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
 .drill-table th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);background:var(--surface2);position:sticky;top:0}
 .month-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pitched-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pitched-meta{font-size:12px;color:var(--text2);margin-bottom:12px}
+.pitched-table th.sticky-left,.pitched-table td.sticky-left{position:sticky;left:0;z-index:3;background:var(--surface)}
+.pitched-table thead th.sticky-left{z-index:4;background:var(--surface2)}
+.pitched-month-row td{background:var(--surface2);font-weight:600;color:var(--text)}
+.pitched-month-row button{border:none;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:8px}
+.pitched-month-summary td{background:var(--blue-bg);font-weight:600}
+.pitched-summary-row td{background:var(--green-bg);font-weight:600}
+.pitched-hidden{display:none}
+.pitched-cell{text-align:center;white-space:nowrap}
 
 
 /* PROGRESS */
@@ -228,6 +238,10 @@ td.editable:hover{background:var(--blue-bg)!important}
   <div class="nav-item" onclick="showSection('monthly',this)">
     <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="3" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M5 1v4M11 1v4M1 7h14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
     Monthly Tracker
+  </div>
+  <div class="nav-item" onclick="showSection('daily',this)">
+    <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.2"/><path d="M8 4v4l3 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    Pitched Sellers Tracker
   </div>
   <div class="nav-item" onclick="showSection('sellers',this)">
     <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -393,6 +407,36 @@ td.editable:hover{background:var(--blue-bg)!important}
           <div>📌 <strong>Actual MRR</strong> = Latest month's own MRR <strong>+</strong> overlapping run-rate from prior months still active</div>
           <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(37,99,235,.2)">Example: Apr deal ₹30K/3mo = ₹10K/mo. If May has its own ₹15K MRR + April's ₹10K still running → Actual MRR = ₹25K</div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PITCHED SELLERS TRACKER -->
+<div id="sec-daily" class="section">
+  <div class="pitched-toolbar" style="margin-bottom:16px">
+    <input type="date" class="filter" id="pitchedStartDate" style="max-width:150px">
+    <input type="date" class="filter" id="pitchedEndDate" style="max-width:150px">
+    <select class="filter" id="pitchedTeamFilter" onchange="renderPitchedTracker()"><option value="">All Teams</option></select>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)">
+      <input type="checkbox" id="pitchedCutoffToggle" onchange="renderPitchedTracker()">
+      Before cutoff
+    </label>
+    <input type="date" class="filter" id="pitchedCutoffDate" style="max-width:150px" onchange="renderPitchedTracker()">
+    <button class="btn" onclick="resetPitchedTrackerRange()">Auto Range</button>
+    <button class="btn" onclick="toggleAllPitchedMonths(true)">Expand All</button>
+    <button class="btn" onclick="toggleAllPitchedMonths(false)">Collapse All</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Pitched Sellers Tracker</div>
+    <div id="pitchedTrackerMeta" class="pitched-meta"></div>
+    <div class="table-wrap">
+      <div class="table-scroll" style="max-height:calc(100vh - 300px);overflow-y:auto">
+        <table id="pitchedTrackerTable" class="pitched-table">
+          <thead id="pitchedTrackerHead"></thead>
+          <tbody id="pitchedTrackerBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -758,6 +802,7 @@ function getFilteredSellers(prefix) {
 
 function getSectionConfig(section) {
   if (section === 'monthly') return { prefix: 'monthly', includeYear: true, includeSearch: false };
+  if (section === 'daily') return { prefix: 'daily', includeYear: false, includeSearch: false };
   if (section === 'sellers') return { prefix: 'filter', includeYear: false, includeSearch: true };
   if (section === 'overview') return { prefix: 'overview', includeYear: false, includeSearch: false };
   if (section === 'funnel') return { prefix: 'funnel', includeYear: false, includeSearch: false };
@@ -1104,11 +1149,17 @@ async function syncFromSheets() {
       agencyFiltered = [...agencySellers];
       agencyPage = 1;
     }
+    if (Array.isArray(json.pitchedLog)) {
+      pitchedLog = json.pitchedLog.map(normalisePitchedRow);
+    } else if (Array.isArray(json.pitched_log)) {
+      pitchedLog = json.pitched_log.map(normalisePitchedRow);
+    }
     rebuildCharts();
     filterSellers();
     renderPaymentClosureStats();
     initAgencyFilters();
     filterAgency();
+    initDailyTracker();
     lastSuccessfulSyncText = new Date().toLocaleTimeString();
     setSyncStatus("ok","✓ Synced " + new Date().toLocaleTimeString());
   } catch(e) {
@@ -1373,6 +1424,10 @@ function refreshDashboardSection(name){
   }
   if(name==='monthly') {
     renderMonthly();
+    return;
+  }
+  if(name==='daily') {
+    initDailyTracker();
     return;
   }
   if(name==='overview' || name==='funnel' || name==='teams' || name==='outreach') {
@@ -2116,12 +2171,295 @@ initAgencyFilters();
 filterAgency();
 setSyncStatus('loading', SHEETS_URL ? 'Waiting for Google Sheets sync…' : '⚠ Add your Apps Script URL to enable sync');
 
+// ══════════════════════════════════════════════════════════════════
+//  PITCHED SELLERS TRACKER IMPLEMENTATION
+// ══════════════════════════════════════════════════════════════════
+
+let pitchedLog = []; // Array of {date, team, am, pitched_count}
+const pitchedTrackerState = {
+  collapsedMonths: new Set(),
+  autoRange: true
+};
+const dateToday = () => new Date().toISOString().split('T')[0];
+
+function normalisePitchedRow(row) {
+  return {
+    date: row.date || '',
+    team: row.team || '',
+    am: row.am || '',
+    pitched_count: parseInt(row.pitched_count ?? row.pitchedCount ?? row.count, 10) || 0
+  };
+}
+
+function getDistinctValues(rows, field) {
+  return [...new Set(rows.map(row => row[field]).filter(Boolean))].sort();
+}
+
+function getPitchedFilteredRows() {
+  const teamFilter = document.getElementById('pitchedTeamFilter')?.value || '';
+  return pitchedLog
+    .filter(row => row.date && row.am)
+    .filter(row => !teamFilter || row.team === teamFilter);
+}
+
+function getPitchedDateBounds(rows) {
+  if (!rows.length) {
+    const today = dateToday();
+    return { startDate: today, endDate: today };
+  }
+  const dates = rows.map(row => row.date).sort();
+  return { startDate: dates[0], endDate: dates[dates.length - 1] };
+}
+
+function buildDateAxis(startDate, endDate) {
+  const dates = [];
+  const cursor = new Date(startDate + 'T00:00:00');
+  const finalDate = new Date(endDate + 'T00:00:00');
+  while (cursor <= finalDate) {
+    dates.push(cursor.toISOString().split('T')[0]);
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return dates;
+}
+
+function buildPitchedTrackerModel(rows, startDate, endDate, cutoffEnabled, cutoffDate) {
+  const dateAxis = buildDateAxis(startDate, endDate);
+  const ams = getDistinctValues(rows, 'am');
+  const dayLookup = new Map();
+  const monthTotals = new Map();
+  const monthBeforeCutoffTotals = new Map();
+  const beforeCutoffTotals = new Map();
+
+  rows.forEach(row => {
+    if (row.date < startDate || row.date > endDate) return;
+    const dayKey = `${row.date}|${row.am}`;
+    dayLookup.set(dayKey, (dayLookup.get(dayKey) || 0) + row.pitched_count);
+
+    const monthKey = monthValue(row.date);
+    if (!monthTotals.has(monthKey)) monthTotals.set(monthKey, new Map());
+    const monthMap = monthTotals.get(monthKey);
+    monthMap.set(row.am, (monthMap.get(row.am) || 0) + row.pitched_count);
+
+    if (cutoffEnabled && cutoffDate && row.date < cutoffDate) {
+      beforeCutoffTotals.set(row.am, (beforeCutoffTotals.get(row.am) || 0) + row.pitched_count);
+      if (!monthBeforeCutoffTotals.has(monthKey)) monthBeforeCutoffTotals.set(monthKey, new Map());
+      const monthCutoffMap = monthBeforeCutoffTotals.get(monthKey);
+      monthCutoffMap.set(row.am, (monthCutoffMap.get(row.am) || 0) + row.pitched_count);
+    }
+  });
+
+  return { dateAxis, ams, dayLookup, monthTotals, monthBeforeCutoffTotals, beforeCutoffTotals };
+}
+
+function sumMapValues(valueMap) {
+  let total = 0;
+  valueMap.forEach(value => {
+    total += value;
+  });
+  return total;
+}
+
+function formatPitchedDate(dateValue) {
+  return new Date(dateValue + 'T00:00:00').toLocaleDateString('en-IN', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function initDailyTracker() {
+  const rows = getPitchedFilteredRows();
+  initPitchedTracker(rows);
+}
+
+function initPitchedTracker(rows) {
+  const teamFilter = document.getElementById('pitchedTeamFilter');
+  if (teamFilter) {
+    const currentValue = teamFilter.value;
+    const teams = getDistinctValues(pitchedLog, 'team');
+    teamFilter.innerHTML = '<option value="">All Teams</option>';
+    teams.forEach(team => {
+      const option = document.createElement('option');
+      option.value = team;
+      option.textContent = team;
+      teamFilter.appendChild(option);
+    });
+    teamFilter.value = currentValue;
+  }
+
+  if (pitchedTrackerState.autoRange) {
+    const bounds = getPitchedDateBounds(rows);
+    const startInput = document.getElementById('pitchedStartDate');
+    const endInput = document.getElementById('pitchedEndDate');
+    if (startInput) startInput.value = bounds.startDate;
+    if (endInput) endInput.value = bounds.endDate;
+  }
+
+  const cutoffToggle = document.getElementById('pitchedCutoffToggle');
+  const cutoffDate = document.getElementById('pitchedCutoffDate');
+  if (cutoffToggle && !cutoffToggle.dataset.initialized) {
+    cutoffToggle.dataset.initialized = 'true';
+    cutoffToggle.checked = false;
+  }
+  if (cutoffDate && !cutoffDate.value) cutoffDate.value = dateToday();
+
+  renderPitchedTracker();
+}
+
+function resetPitchedTrackerRange() {
+  pitchedTrackerState.autoRange = true;
+  initPitchedTracker(getPitchedFilteredRows());
+}
+
+function toggleAllPitchedMonths(expand) {
+  const rows = getPitchedFilteredRows();
+  const bounds = getPitchedDateBounds(rows);
+  const months = [];
+  const cursor = new Date(bounds.startDate + 'T00:00:00');
+  const finalDate = new Date(bounds.endDate + 'T00:00:00');
+  while (cursor <= finalDate) {
+    const monthKey = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+    if (!months.includes(monthKey)) months.push(monthKey);
+    cursor.setMonth(cursor.getMonth() + 1);
+    cursor.setDate(1);
+  }
+  pitchedTrackerState.collapsedMonths = expand ? new Set() : new Set(months);
+  renderPitchedTracker();
+}
+
+function togglePitchedMonth(monthKey) {
+  if (pitchedTrackerState.collapsedMonths.has(monthKey)) {
+    pitchedTrackerState.collapsedMonths.delete(monthKey);
+  } else {
+    pitchedTrackerState.collapsedMonths.add(monthKey);
+  }
+  renderPitchedTracker();
+}
+
+function renderPitchedTracker() {
+  const rows = getPitchedFilteredRows();
+  const startInput = document.getElementById('pitchedStartDate');
+  const endInput = document.getElementById('pitchedEndDate');
+  const cutoffEnabled = document.getElementById('pitchedCutoffToggle')?.checked || false;
+  const cutoffDate = document.getElementById('pitchedCutoffDate')?.value || '';
+
+  if (pitchedTrackerState.autoRange && rows.length && startInput && endInput) {
+    const bounds = getPitchedDateBounds(rows);
+    if (!startInput.value) startInput.value = bounds.startDate;
+    if (!endInput.value) endInput.value = bounds.endDate;
+  }
+
+  const startDate = startInput?.value || getPitchedDateBounds(rows).startDate;
+  const endDate = endInput?.value || getPitchedDateBounds(rows).endDate;
+  const model = buildPitchedTrackerModel(rows, startDate, endDate, cutoffEnabled, cutoffDate);
+
+  const meta = document.getElementById('pitchedTrackerMeta');
+  if (meta) {
+    const monthCount = [...new Set(model.dateAxis.map(monthValue))].filter(Boolean).length;
+    meta.textContent = `${model.dateAxis.length} day(s) across ${monthCount} month(s) · ${model.ams.length} AM(s) · ${rows.length} source row(s)`;
+  }
+
+  const head = document.getElementById('pitchedTrackerHead');
+  const body = document.getElementById('pitchedTrackerBody');
+  if (!head || !body) return;
+
+  const columnCount = 1 + model.ams.length + 2;
+  head.innerHTML = `
+    <tr>
+      <th class="sticky-left" style="min-width:140px">Date</th>
+      ${model.ams.map(am => `<th style="min-width:90px;text-align:center">${am}</th>`).join('')}
+      <th style="min-width:110px;text-align:center">Month Total</th>
+      <th style="min-width:120px;text-align:center">Before Cutoff</th>
+    </tr>
+  `;
+
+  const monthGroups = [];
+  model.dateAxis.forEach(dateValue => {
+    const monthKey = monthValue(dateValue);
+    let group = monthGroups.find(item => item.monthKey === monthKey);
+    if (!group) {
+      group = { monthKey, dates: [] };
+      monthGroups.push(group);
+    }
+    group.dates.push(dateValue);
+  });
+
+  const bodyRows = [];
+
+  if (cutoffEnabled && cutoffDate) {
+    const beforeCutoffRow = model.ams.map(am => model.beforeCutoffTotals.get(am) || 0);
+    const totalBeforeCutoff = beforeCutoffRow.reduce((sum, value) => sum + value, 0);
+    bodyRows.push(`
+      <tr class="pitched-summary-row">
+        <td class="sticky-left">Before ${cutoffDate}</td>
+        ${beforeCutoffRow.map(value => `<td class="pitched-cell">${value}</td>`).join('')}
+        <td class="pitched-cell">${totalBeforeCutoff}</td>
+        <td class="pitched-cell">${totalBeforeCutoff}</td>
+      </tr>
+    `);
+  }
+
+  monthGroups.forEach(group => {
+    const monthTotals = model.monthTotals.get(group.monthKey) || new Map();
+    const monthTotalByAm = model.ams.map(am => monthTotals.get(am) || 0);
+    const monthGrandTotal = monthTotalByAm.reduce((sum, value) => sum + value, 0);
+    const monthCollapsed = pitchedTrackerState.collapsedMonths.has(group.monthKey);
+
+    bodyRows.push(`
+      <tr class="pitched-month-row">
+        <td class="sticky-left" colspan="${columnCount}">
+          <button type="button" onclick="togglePitchedMonth('${group.monthKey}')">
+            <span>${monthCollapsed ? '▸' : '▾'}</span>
+            <span>${fmtMonth(group.monthKey)}</span>
+            <span style="color:var(--text3);font-weight:400">${group.dates.length} day(s)</span>
+          </button>
+        </td>
+      </tr>
+    `);
+
+    group.dates.forEach(dateValue => {
+      const dayValues = model.ams.map(am => model.dayLookup.get(`${dateValue}|${am}`) || 0);
+      bodyRows.push(`
+        <tr class="${monthCollapsed ? 'pitched-hidden' : ''}" data-month="${group.monthKey}">
+          <td class="sticky-left">${formatPitchedDate(dateValue)}</td>
+          ${dayValues.map(value => `<td class="pitched-cell">${value}</td>`).join('')}
+          <td class="pitched-cell"></td>
+          <td class="pitched-cell"></td>
+        </tr>
+      `);
+    });
+
+    const monthBeforeCutoffMap = model.monthBeforeCutoffTotals.get(group.monthKey) || new Map();
+    bodyRows.push(`
+      <tr class="pitched-month-summary ${monthCollapsed ? 'pitched-hidden' : ''}" data-month="${group.monthKey}">
+        <td class="sticky-left">Month Total · ${fmtMonth(group.monthKey)}</td>
+        ${monthTotalByAm.map(value => `<td class="pitched-cell">${value}</td>`).join('')}
+        <td class="pitched-cell">${monthGrandTotal}</td>
+        <td class="pitched-cell">${cutoffEnabled ? sumMapValues(monthBeforeCutoffMap) : ''}</td>
+      </tr>
+    `);
+  });
+
+  body.innerHTML = bodyRows.join('') || `
+    <tr>
+      <td class="sticky-left" colspan="${columnCount}" style="text-align:center;color:var(--text3);padding:24px">No pitched_log rows found for the selected filters.</td>
+    </tr>
+  `;
+}
+
+// ══════════════════════════════════════════════════════════════════
+
+setSyncStatus('loading', SHEETS_URL ? 'Waiting for Google Sheets sync…' : '⚠ Add your Apps Script URL to enable sync');
+
 // Auto-sync from Google Sheets on load (if URL is configured)
 if (SHEETS_URL) {
   syncFromSheets();
 } else {
   setSyncStatus('error', '⚠ Add your Apps Script URL to enable sync');
 }
+
+// Initialize pitched tracker on page load
+initDailyTracker();
 
 window.addEventListener('hashchange', loadPresetsFromHash);
 </script>
