@@ -666,6 +666,18 @@ function monthValue(dateValue) {
   return dateValue ? dateValue.slice(0, 7) : '';
 }
 
+function currentMonthKey() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getAsOfMonth(months) {
+  const currentMonth = currentMonthKey();
+  const eligible = months.filter(month => month <= currentMonth);
+  if (eligible.length) return eligible.sort().pop();
+  return months.length ? [...months].sort().pop() : null;
+}
+
 function debounce(fn, delayMs) {
   let timer = null;
   return function debounced(...args) {
@@ -1658,7 +1670,7 @@ function renderMonthly(){
   const totalClosures=Object.values(closureMap).reduce((a,d)=>a+d.count,0);
   const totalVal=Object.values(revenueMap).reduce((a,d)=>a+d.totalVal,0);
   const totalMRR=Object.values(mrrContribMap).reduce((a,d)=>a+d.totalMRR,0);
-  const latestMRRMonth=mrrMonths.length?[...mrrMonths].sort().pop():null;
+  const latestMRRMonth=getAsOfMonth(mrrMonths);
   const actualMRR=latestMRRMonth&&mrrContribMap[latestMRRMonth]?Math.round(mrrContribMap[latestMRRMonth].totalMRR):0;
   const onboardLabel = onboardSel ? fmtMonth(onboardSel) : 'All onboarding months';
   window.__monthlyDrillSource = mrrContribMap;
@@ -1738,7 +1750,7 @@ function renderMonthly(){
 
   // ── ACTUAL MRR CARD ────────────────────────────────────────────────────
   // Latest month with any MRR activity
-  const latestActualMRRMonth=mrrMonths.length?[...mrrMonths].sort().pop():null;
+  const latestActualMRRMonth=getAsOfMonth(mrrMonths);
   if(latestActualMRRMonth&&mrrContribMap[latestActualMRRMonth]){
     const latestData=mrrContribMap[latestActualMRRMonth];
     const actualMRR=Math.round(latestData.totalMRR);
@@ -1898,7 +1910,7 @@ function renderAgencyMonthly() {
   const allMonths=[...new Set([...Object.keys(closureMap),...Object.keys(revenueMap),...Object.keys(mrrContribMap)])].sort();
   const mrrMonths=allMonths.filter(m=>mrrContribMap[m]);
   const totalClosures=closedSellers.length, totalVal=allClosed.reduce((a,s)=>a+(+s.dealAmount||0),0);
-  const latestMRRMonth=mrrMonths.length?[...mrrMonths].sort().pop():null;
+  const latestMRRMonth=getAsOfMonth(mrrMonths);
   const actualMRR=latestMRRMonth&&mrrContribMap[latestMRRMonth]?Math.round(mrrContribMap[latestMRRMonth].totalMRR):0;
   const onboardLabel = onboardSel ? fmtMonth(onboardSel) : 'All onboarding months';
   window.__agencyMonthlyDrillSource = mrrContribMap;
