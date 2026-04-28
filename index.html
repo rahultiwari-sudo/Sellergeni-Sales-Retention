@@ -367,12 +367,13 @@ td.editable:hover{background:var(--blue-bg)!important}
 <!-- SELLERS TABLE -->
 <div id="sec-sellers" class="section">
   <div class="toolbar">
-    <input class="search-box" id="sellerSearch" type="text" placeholder="Search by store name, AM, or account ID..." oninput="filterSellers()">
+    <input class="search-box" id="sellerSearch" type="text" placeholder="Search by store name, AM, or account ID..." oninput="debouncedFilterSellers()">
     <select class="filter" id="filterTeam" onchange="filterSellers()"><option value="">All teams</option></select>
     <select class="filter" id="filterStage" onchange="filterSellers()"><option value="">All stages</option></select>
     <select class="filter" id="filterAM" onchange="filterSellers()"><option value="">All AMs</option></select>
     <select class="filter" id="filterProgram" onchange="filterSellers()"><option value="">All programs</option></select>
-    
+    <select class="filter" id="filterOnboardMonth" onchange="filterSellers()"><option value="">All onboarding months</option></select>
+    <select class="filter" id="filterIntent" onchange="filterSellers()"><option value="">All intents</option></select>
   </div>
   <div style="font-size:12px;color:var(--text3);margin-bottom:10px" id="sellerCount"></div>
   <div class="table-wrap">
@@ -395,8 +396,6 @@ td.editable:hover{background:var(--blue-bg)!important}
         </tr></thead>
         <tbody id="sellerTbody"></tbody>
       </table>
-    <select class="filter" id="filterOnboardMonth" onchange="filterSellers()"><option value="">All onboarding months</option></select>
-    <select class="filter" id="filterIntent" onchange="filterSellers()"><option value="">All intents</option></select>
     </div>
     <div class="pagination">
       <div class="page-info" id="pageInfo"></div>
@@ -580,21 +579,37 @@ function monthValue(dateValue) {
   return dateValue ? dateValue.slice(0, 7) : '';
 }
 
+function debounce(fn, delayMs) {
+  let timer = null;
+  return function debounced(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delayMs);
+  };
+}
+
+const filterOptionsCache = {};
+
 function populateFilterDropdown(selectId, rows, field) {
   const el = document.getElementById(selectId);
   if (!el) return '';
   const currentValue = el.value;
   const values = [...new Set(rows.map(r => r[field]).filter(Boolean))].sort();
-  const placeholder = `All ${field}s`;
-  el.innerHTML = `<option value="">${placeholder}</option>`;
-  values.forEach(val => {
-    const option = document.createElement('option');
-    option.value = val;
-    option.textContent = val;
-    el.appendChild(option);
-  });
+  const signature = values.join('|');
+  if (filterOptionsCache[selectId] !== signature) {
+    filterOptionsCache[selectId] = signature;
+    const placeholder = `All ${field}s`;
+    el.innerHTML = `<option value="">${placeholder}</option>`;
+    values.forEach(val => {
+      const option = document.createElement('option');
+      option.value = val;
+      option.textContent = val;
+      el.appendChild(option);
+    });
+  }
   if (currentValue && values.includes(currentValue)) {
     el.value = currentValue;
+  } else if (currentValue) {
+    el.value = '';
   }
   return el.value;
 }
@@ -604,15 +619,21 @@ function populateOnboardingMonthFilter(selectId, rows) {
   if (!el) return '';
   const currentValue = el.value;
   const months = [...new Set(rows.map(r => monthValue(r.onboarded)).filter(Boolean))].sort();
-  el.innerHTML = '<option value="">All onboarding months</option>';
-  months.forEach(month => {
-    const option = document.createElement('option');
-    option.value = month;
-    option.textContent = fmtMonth(month);
-    el.appendChild(option);
-  });
+  const signature = months.join('|');
+  if (filterOptionsCache[selectId] !== signature) {
+    filterOptionsCache[selectId] = signature;
+    el.innerHTML = '<option value="">All onboarding months</option>';
+    months.forEach(month => {
+      const option = document.createElement('option');
+      option.value = month;
+      option.textContent = fmtMonth(month);
+      el.appendChild(option);
+    });
+  }
   if (currentValue && months.includes(currentValue)) {
     el.value = currentValue;
+  } else if (currentValue) {
+    el.value = '';
   }
   return el.value;
 }
@@ -753,13 +774,13 @@ function filterSellers(){
   populateFilterDropdown('filterStage', sellers, 'stage');
   populateFilterDropdown('filterIntent', sellers, 'intent');
   
-  const q = document.getElementById('sellerSearch').value.toLowerCase();
-  const onboardMonth = document.getElementById('filterOnboardMonth').value;
-  const team = document.getElementById('filterTeam').value;
-  const stage = document.getElementById('filterStage').value;
-  const am = document.getElementById('filterAM').value;
-  const program = document.getElementById('filterProgram').value;
-  const intent = document.getElementById('filterIntent').value;
+  const q = (document.getElementById('sellerSearch')?.value || '').toLowerCase();
+  const onboardMonth = document.getElementById('filterOnboardMonth')?.value || '';
+  const team = document.getElementById('filterTeam')?.value || '';
+  const stage = document.getElementById('filterStage')?.value || '';
+  const am = document.getElementById('filterAM')?.value || '';
+  const program = document.getElementById('filterProgram')?.value || '';
+  const intent = document.getElementById('filterIntent')?.value || '';
   filtered = sellers.filter(s=>{
     if(q){const store=(s.store||'').toLowerCase(),samm=(s.am||'').toLowerCase(),id=(s.id||'').toLowerCase();if(!store.includes(q)&&!samm.includes(q)&&!id.includes(q))return false;}
     if(onboardMonth && monthValue(s.onboarded) !== onboardMonth) return false;
@@ -773,6 +794,8 @@ function filterSellers(){
   currentPage = 1;
   renderTable();
 }
+
+const debouncedFilterSellers = debounce(() => filterSellers(), 180);
 
 function renderTable(){
   const start = (currentPage-1)*PER_PAGE;
@@ -953,8 +976,16 @@ function computeStats(){
 }
 
 function mkChart(id,config){
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  if (charts[id] && charts[id].config.type === config.type) {
+    charts[id].data = config.data;
+    charts[id].options = config.options;
+    charts[id].update('none');
+    return;
+  }
   if(charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id),config);
+  charts[id] = new Chart(canvas,config);
 }
 
 function rebuildCharts(){
@@ -1063,11 +1094,21 @@ function rebuildCharts(){
   mkChart('dealTeamChart',{type:'bar',data:{labels:dtEntries.map(e=>e[0]),datasets:[{data:dtEntries.map(e=>e[1]),backgroundColor:['#7c3aed','#2563eb','#16a34a'],borderRadius:4,borderSkipped:false}]},options:{...baseOpts,scales:{x:{ticks:{color:txtColor},grid:{display:false},border:{display:false}},y:{ticks:{color:txtColor,callback:v=>'₹'+(v/1000)+'K'},grid:{color:gridColor},border:{display:false}}}}});
 
   // Team table
+  const teamStats = {};
+  workingData.forEach(s => {
+    const key = s.team || 'Unknown';
+    if (!teamStats[key]) teamStats[key] = { inOut: 0, demosProp: 0, programs: new Set() };
+    if (s.stage === 'In Outreach') teamStats[key].inOut++;
+    if (['Demo Booked','Demo Taken','Proposal Sent','Payment Link Sent'].includes(s.stage)) teamStats[key].demosProp++;
+    if (s.program) teamStats[key].programs.add(s.program);
+  });
+
   const ttb=document.getElementById('teamTableBody');
   ttb.innerHTML=sortedTeams.map(([team,count])=>{
-    const inOut=workingData.filter(s=>s.team===team&&s.stage==='In Outreach').length;
-    const demosProp=workingData.filter(s=>s.team===team&&['Demo Booked','Demo Taken','Proposal Sent','Payment Link Sent'].includes(s.stage)).length;
-    const progs=[...new Set(workingData.filter(s=>s.team===team&&s.program).map(s=>s.program))].join(', ');
+    const stats = teamStats[team] || { inOut: 0, demosProp: 0, programs: new Set() };
+    const inOut = stats.inOut;
+    const demosProp = stats.demosProp;
+    const progs = [...stats.programs].join(', ');
     const dv=dealsByTeam[team]||0;
     const sh=Math.round(count/Math.max(total,1)*100);
     return`<tr><td>${team}</td><td>${count}</td><td>${progs||'—'}</td><td>${inOut}</td><td>${demosProp}</td><td>${dv?'₹'+(dv/1000).toFixed(0)+'K':'—'}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:var(--surface2);border-radius:3px;height:5px;overflow:hidden;min-width:60px"><div style="width:${sh}%;height:100%;background:#2563eb;border-radius:3px"></div></div><span style="font-size:11px;color:var(--text2)">${sh}%</span></div></td></tr>`;
