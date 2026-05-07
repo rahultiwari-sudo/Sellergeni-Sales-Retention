@@ -1,223 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SellerGeni · Retention Pipeline Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="refresh" content="0; url=dashboard-filtered.html">
+  <title>SellerGeni · Retention Pipeline Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      font-family: Arial, sans-serif;
+      background: #f8f7f4;
+      color: #1a1916;
+    }
 
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#f8f7f4;--surface:#ffffff;--surface2:#f1f0ec;--border:#e5e3dc;--border2:#d0cdc4;
-  --text:#1a1916;--text2:#6b6860;--text3:#9b9890;
-  --blue:#2563eb;--blue-bg:#eff6ff;--blue-text:#1e40af;
-  --green:#16a34a;--green-bg:#f0fdf4;--green-text:#15803d;
-  --amber:#d97706;--amber-bg:#fffbeb;--amber-text:#92400e;
-  --red:#dc2626;--red-bg:#fef2f2;--red-text:#991b1b;
-  --purple:#7c3aed;--purple-bg:#f5f3ff;--purple-text:#5b21b6;
-  --gray-bg:#f3f4f6;--gray-text:#374151;
-  --radius:8px;--radius-lg:12px;
-}
-@media(prefers-color-scheme:dark){
-  :root{
-    --bg:#141412;--surface:#1e1d1b;--surface2:#252422;--border:#2e2c28;--border2:#3a3834;
-    --text:#f0ede8;--text2:#9b9890;--text3:#6b6860;
-    --blue:#3b82f6;--blue-bg:#1e293b;--blue-text:#93c5fd;
-    --green:#22c55e;--green-bg:#14291e;--green-text:#86efac;
-    --amber:#f59e0b;--amber-bg:#292012;--amber-text:#fcd34d;
-    --red:#ef4444;--red-bg:#2d1414;--red-text:#fca5a5;
-    --purple:#a78bfa;--purple-bg:#1e1a2e;--purple-text:#c4b5fd;
-    --gray-bg:#252422;--gray-text:#d1d5db;
-  }
-}
-body{font-family:-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+    .card {
+      padding: 24px 28px;
+      border: 1px solid #e5e3dc;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      text-align: center;
+      max-width: 420px;
+      margin: 24px;
+    }
 
-/* LAYOUT */
-.app{display:flex;flex-direction:column;min-height:100vh}
-.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
-.topbar-brand{font-size:15px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
-.topbar-brand span{font-weight:400;color:var(--text2)}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.toolbar-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.status-stack{display:flex;flex-direction:column;gap:2px;min-width:150px}
-.status-line{font-size:11px;line-height:1.2;color:var(--text3)}
-.status-line strong{font-weight:600;color:var(--text2)}
-.preset-bar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 24px;border-bottom:1px solid var(--border);background:var(--surface)}
-.preset-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em}
-.preset-select{min-width:180px}
-.main{display:flex;flex:1}
-.sidebar{width:200px;background:var(--surface);border-right:1px solid var(--border);padding:16px 0;flex-shrink:0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;border-radius:0;color:var(--text2);font-size:13px;transition:all 0.1s;border-left:3px solid transparent}
-.nav-item:hover{background:var(--surface2);color:var(--text)}
-.nav-item.active{background:var(--blue-bg);color:var(--blue-text);border-left-color:var(--blue);font-weight:500}
-.nav-icon{width:16px;height:16px;opacity:0.6}
-.nav-item.active .nav-icon{opacity:1}
-.content{flex:1;padding:24px;overflow:hidden;min-width:0}
-
-/* TABS */
-.section{display:none}.section.active{display:block}
-
-/* METRIC CARDS */
-.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
-.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
-.metric.clickable{cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease}
-.metric.clickable:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.06);border-color:var(--blue)}
-.metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
-.metric-value{font-size:24px;font-weight:600;color:var(--text);line-height:1}
-.metric-sub{font-size:11px;color:var(--text3);margin-top:5px}
-.metric.blue{background:var(--blue-bg);border-color:transparent}.metric.blue .metric-value{color:var(--blue-text)}.metric.blue .metric-label,.metric.blue .metric-sub{color:var(--blue-text);opacity:.7}
-.metric.green{background:var(--green-bg);border-color:transparent}.metric.green .metric-value{color:var(--green-text)}.metric.green .metric-label,.metric.green .metric-sub{color:var(--green-text);opacity:.7}
-.metric.amber{background:var(--amber-bg);border-color:transparent}.metric.amber .metric-value{color:var(--amber-text)}.metric.amber .metric-label,.metric.amber .metric-sub{color:var(--amber-text);opacity:.7}
-
-/* CHART CARDS */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:16px}
-.card-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:14px;text-transform:uppercase;letter-spacing:.06em}
-.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
-.legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
-.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)}
-.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
-
-/* FUNNEL */
-.funnel-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
-.funnel-label{font-size:12px;color:var(--text2);width:148px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.funnel-track{flex:1;background:var(--surface2);border-radius:3px;height:20px;overflow:hidden}
-.funnel-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding-left:8px}
-.funnel-fill span{font-size:10px;font-weight:600;color:#fff}
-.funnel-num{font-size:12px;color:var(--text3);width:32px;text-align:right;flex-shrink:0}
-
-/* SELLER TABLE */
-.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.search-box{flex:1;min-width:200px;max-width:320px;padding:7px 12px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;outline:none}
-.search-box:focus{border-color:var(--blue)}
-select.filter{padding:7px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;outline:none}
-select.filter:focus{border-color:var(--blue)}
-.btn{padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface);color:var(--text);font-size:12px;cursor:pointer;font-weight:500;display:inline-flex;align-items:center;gap:5px;transition:all 0.1s;white-space:nowrap}
-.btn:hover{background:var(--surface2)}
-.btn.primary{background:var(--blue);color:#fff;border-color:transparent}
-.btn.primary:hover{opacity:.9}
-.btn.green{background:var(--green);color:#fff;border-color:transparent}
-.btn.green:hover{opacity:.9}
-.btn.danger{background:var(--red-bg);color:var(--red-text);border-color:transparent}
-
-.table-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface)}
-.table-scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:12px}
-thead tr{background:var(--surface2)}
-th{padding:9px 12px;text-align:left;font-weight:500;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;background:var(--surface2)}
-td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:var(--surface2)}
-td.editable{cursor:pointer}
-td.editable:hover{background:var(--blue-bg)!important}
-
-/* BADGES */
-.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}
-.badge-green{background:var(--green-bg);color:var(--green-text)}
-.badge-blue{background:var(--blue-bg);color:var(--blue-text)}
-.badge-amber{background:var(--amber-bg);color:var(--amber-text)}
-.badge-red{background:var(--red-bg);color:var(--red-text)}
-.badge-purple{background:var(--purple-bg);color:var(--purple-text)}
-.badge-gray{background:var(--gray-bg);color:var(--gray-text)}
-
-/* INLINE SELECT */
-.inline-select{font-size:12px;padding:3px 6px;border:1px solid var(--blue);border-radius:5px;background:var(--surface);color:var(--text);outline:none;cursor:pointer}
-
-/* PAGINATION */
-.pagination{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-top:1px solid var(--border);background:var(--surface2)}
-.page-info{font-size:12px;color:var(--text2)}
-.page-btns{display:flex;gap:6px}
-.page-btn{padding:4px 10px;border:1px solid var(--border2);border-radius:5px;background:var(--surface);color:var(--text);font-size:12px;cursor:pointer}
-.page-btn:hover{background:var(--surface2)}
-.page-btn.active{background:var(--blue);color:#fff;border-color:transparent}
-.page-btn:disabled{opacity:.4;cursor:not-allowed}
-
-/* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
-.modal-overlay.open{display:flex}
-.modal{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:500px;max-width:95vw;max-height:85vh;overflow-y:auto}
-.modal-title{font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text)}
-.modal-field{margin-bottom:14px}
-.modal-label{font-size:12px;color:var(--text2);margin-bottom:5px;display:block}
-.modal-select,.modal-input{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--surface);color:var(--text);font-size:13px;outline:none}
-.modal-select:focus,.modal-input:focus{border-color:var(--blue)}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-.modal-subtitle{font-size:12px;color:var(--text2);margin-top:4px}
-.drill-table{width:100%;border-collapse:collapse;font-size:12px}
-.drill-table th,.drill-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
-.drill-table th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);background:var(--surface2);position:sticky;top:0}
-.month-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.pitched-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.pitched-meta{font-size:12px;color:var(--text2);margin-bottom:12px}
-.pitched-table th.sticky-left,.pitched-table td.sticky-left{position:sticky;left:0;z-index:3;background:var(--surface)}
-.pitched-table thead th.sticky-left{z-index:4;background:var(--surface2)}
-.pitched-month-row td{background:var(--surface2);font-weight:600;color:var(--text)}
-.pitched-month-row button{border:none;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:8px}
-.pitched-month-summary td{background:var(--blue-bg);font-weight:600}
-.pitched-summary-row td{background:var(--green-bg);font-weight:600}
-.pitched-hidden{display:none}
-.pitched-cell{text-align:center;white-space:nowrap}
-
-
-/* PROGRESS */
-.bar-wrap{background:var(--surface2);border-radius:3px;height:5px;margin-top:5px;overflow:hidden}
-.bar-fill{height:100%;border-radius:3px;transition:width .3s}
-
-.metric.red{background:var(--red-bg);border-color:transparent}.metric.red .metric-value{color:var(--red-text)}.metric.red .metric-label,.metric.red .metric-sub{color:var(--red-text);opacity:.7}
-.metric.purple{background:var(--purple-bg);border-color:transparent}.metric.purple .metric-value{color:var(--purple-text)}.metric.purple .metric-label,.metric.purple .metric-sub{color:var(--purple-text);opacity:.7}
-/* Payment Closed standout card */
-.metric.star{
-  background:linear-gradient(135deg,#15803d 0%,#16a34a 60%,#22c55e 100%);
-  border:none;
-  border-radius:var(--radius-lg);
-  box-shadow:0 4px 18px rgba(22,163,74,.35),0 1px 4px rgba(0,0,0,.1);
-  transform:translateY(-2px);
-  position:relative;
-  overflow:hidden;
-}
-.metric.star::before{
-  content:'';
-  position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.15) 0%,transparent 60%);
-  pointer-events:none;
-}
-.metric.star .metric-label{color:rgba(255,255,255,.85);font-size:10px;letter-spacing:.08em}
-.metric.star .metric-value{color:#ffffff;font-size:28px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.2)}
-.metric.star .metric-sub{color:rgba(255,255,255,.75)}
-.metric.star .metric-icon{font-size:22px;position:absolute;top:10px;right:12px;opacity:.4}
-</style>
+    a {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-
-<div class="topbar">
-  <div class="topbar-brand">
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect width="20" height="20" rx="5" fill="#2563eb"/><path d="M5 10h10M10 5l5 5-5 5" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    SellerGeni <span>Retention Pipeline</span>
+  <div class="card">
+    <h1>SellerGeni Retention Dashboard</h1>
+    <p>Redirecting to the advanced filtered dashboard.</p>
+    <p><a href="dashboard-filtered.html">Open dashboard</a></p>
   </div>
-  <div class="topbar-right">
-    <div class="status-stack">
-      <span id="syncStatus" class="status-line"></span>
-      <span id="syncDetail" class="status-line"></span>
-    </div>
-    <div class="status-stack">
-      <span id="lastSaved" class="status-line"></span>
-      <span id="lastError" class="status-line"></span>
-    </div>
-    <button class="btn" id="syncBtn" onclick="syncFromSheets()" title="Pull latest data from Google Sheets">&#8635; Sync</button>
-    <button class="btn" id="exportBtn" onclick="exportCurrentView()" title="Export the current view as CSV">⬇ Export CSV</button>
-    <select class="filter preset-select" id="presetSelect" onchange="applySelectedPreset()"><option value="">Saved filter presets</option></select>
-    <button class="btn" onclick="saveCurrentPreset()" title="Save the current filter set">+ Save Preset</button>
-    
-  </div>
-</div>
-
-<div class="preset-bar">
-  <div class="preset-label">Quick Presets</div>
-  <div id="presetChips" class="toolbar-actions"></div>
-</div>
-
-<div class="main">
+</body>
+</html>
 <nav class="sidebar">
   <div class="nav-item active" onclick="showSection('overview',this)">
     <svg class="nav-icon" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>

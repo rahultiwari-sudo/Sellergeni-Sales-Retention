@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevate Retention Dashboard - Advanced Filtering</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Tab Navigation */
+        .tab-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .tab-navigation {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            background: #f9fafb;
+            flex-wrap: wrap;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            padding: 16px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            background: #f0f0f0;
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        /* Filters Panel */
+        .filters-panel {
+            background: #f9fafb;
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .filter-control {
+            display: flex;
+            gap: 8px;
+        }
+
+        select, input[type="date"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            background: white;
+            cursor: pointer;
+        }
+
+        select:focus, input[type="date"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #764ba2;
+        }
+
+        .filter-btn.clear {
+            background: #ef4444;
+        }
+
+        .filter-btn.clear:hover {
+            background: #dc2626;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .kpi-card.alert {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .kpi-card.success {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        }
+
+        .kpi-card.warning {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .kpi-label {
+            font-size: 11px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .kpi-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .kpi-subtext {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 15px;
+        }
+
+        /* Funnel */
+        .funnel-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .funnel-stage {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px;
+            border-radius: 6px;
+            color: white;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .funnel-stage.low {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .funnel-stage.medium {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .funnel-stage.high {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        }
+
+        .funnel-stage-name {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .funnel-stage-value {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .funnel-stage-rate {
+            font-size: 10px;
+            opacity: 0.8;
+        }
+
+        /* Tables */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 6px;
+            overflow: hidden;
+            font-size: 12px;
+        }
+
+        .stats-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-badge.active {
+            background: #dcfce7;
+            color: #047857;
+        }
+
+        .status-badge.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            font-size: 12px;
+        }
+
+        .filter-summary {
+            background: #f0fdf4;
+            border: 1px solid #86efac;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: #166534;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters-panel {
+                grid-template-columns: 1fr;
+            }
+
+            .tab-btn {
+                padding: 12px 16px;
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Elevate Retention Dashboard</h1>
+            <p>Advanced Seller Retention Tracker with Multi-Level Filtering</p>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="switchTab('active-month')">📅 Active Month</button>
+                <button class="tab-btn" onclick="switchTab('am-breakdown')">👤 AM Breakdown</button>
+                <button class="tab-btn" onclick="switchTab('team-breakdown')">👥 Team Breakdown</button>
+                <button class="tab-btn" onclick="switchTab('mom-tracker')">📈 Month-on-Month</button>
+                <button class="tab-btn" onclick="switchTab('funnel-view')">🔄 Funnel View</button>
+            </div>
+
+            <!-- Active Month Tab -->
+            <div id="active-month" class="tab-content active">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Account Manager</label>
+                        <select id="am-filter-active" onchange="applyFilters('active-month')">
+                            <option value="">All AMs</option>
+                            <option value="Chamanth">Chamanth</option>
+                            <option value="Saikumar">Saikumar</option>
+                            <option value="Sanjay">Sanjay</option>
+                            <option value="Sarthak">Sarthak</option>
+                            <option value="Ved">Ved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-active" onchange="applyFilters('active-month')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-active" onchange="applyFilters('active-month')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="date-from-active" onchange="applyFilters('active-month')">
+                            <input type="date" id="date-to-active" onchange="applyFilters('active-month')">
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('active-month')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('active-month')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-active" style="display:none;"></div>
+                <div class="kpi-grid" id="activeMonthKPIs"></div>
+                <div class="chart-card">
+                    <h3>🎯 Conversion Funnel</h3>
+                    <div id="aprilFunnelStages"></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>📊 Conversion Rates</h3>
+                        <div class="chart-container">
+                            <canvas id="conversionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>💰 Revenue Metrics</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AM Breakdown Tab -->
+            <div id="am-breakdown" class="tab-content">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Account Manager</label>
+                        <select id="am-filter-am" onchange="applyFilters('am-breakdown')">
+                            <option value="">All AMs</option>
+                            <option value="Chamanth">Chamanth</option>
+                            <option value="Saikumar">Saikumar</option>
+                            <option value="Sanjay">Sanjay</option>
+                            <option value="Sarthak">Sarthak</option>
+                            <option value="Ved">Ved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-am" onchange="applyFilters('am-breakdown')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-am" onchange="applyFilters('am-breakdown')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="date-from-am" onchange="applyFilters('am-breakdown')">
+                            <input type="date" id="date-to-am" onchange="applyFilters('am-breakdown')">
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('am-breakdown')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('am-breakdown')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-am" style="display:none;"></div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>AM Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="amComparisonChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 AM Detailed Metrics</h3>
+                    <table class="stats-table" id="amTable"></table>
+                </div>
+            </div>
+
+            <!-- Team Breakdown Tab -->
+            <div id="team-breakdown" class="tab-content">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-team" onchange="applyFilters('team-breakdown')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-team" onchange="applyFilters('team-breakdown')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="date-from-team" onchange="applyFilters('team-breakdown')">
+                            <input type="date" id="date-to-team" onchange="applyFilters('team-breakdown')">
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('team-breakdown')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('team-breakdown')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-team" style="display:none;"></div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Team Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="teamComparisonChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Team Revenue</h3>
+                        <div class="chart-container">
+                            <canvas id="teamRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 Team Detailed Metrics</h3>
+                    <table class="stats-table" id="teamTable"></table>
+                </div>
+            </div>
+
+            <!-- Month-on-Month Tab -->
+            <div id="mom-tracker" class="tab-content">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Account Manager</label>
+                        <select id="am-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All AMs</option>
+                            <option value="Chamanth">Chamanth</option>
+                            <option value="Saikumar">Saikumar</option>
+                            <option value="Sanjay">Sanjay</option>
+                            <option value="Sarthak">Sarthak</option>
+                            <option value="Ved">Ved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('mom-tracker')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('mom-tracker')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-mom" style="display:none;"></div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Sellers by Month</h3>
+                        <div class="chart-container">
+                            <canvas id="momSellersChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Conversion Rates Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="momConversionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 Monthly Summary</h3>
+                    <table class="stats-table" id="momTable"></table>
+                </div>
+            </div>
+
+            <!-- Funnel View Tab -->
+            <div id="funnel-view" class="tab-content">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Account Manager</label>
+                        <select id="am-filter-funnel" onchange="applyFilters('funnel-view')">
+                            <option value="">All AMs</option>
+                            <option value="Chamanth">Chamanth</option>
+                            <option value="Saikumar">Saikumar</option>
+                            <option value="Sanjay">Sanjay</option>
+                            <option value="Sarthak">Sarthak</option>
+                            <option value="Ved">Ved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-funnel" onchange="applyFilters('funnel-view')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-funnel" onchange="applyFilters('funnel-view')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="date-from-funnel" onchange="applyFilters('funnel-view')">
+                            <input type="date" id="date-to-funnel" onchange="applyFilters('funnel-view')">
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('funnel-view')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('funnel-view')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-funnel" style="display:none;"></div>
+                <div class="chart-card">
+                    <h3>📊 Sales Funnel Pipeline</h3>
+                    <div id="funnelStagesContainer"></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Funnel Drop-off Analysis</h3>
+                        <div class="chart-container">
+                            <canvas id="funnelDropoffChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Funnel Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="funnelDistChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 Funnel Details</h3>
+                    <table class="stats-table" id="funnelDetailsTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Last Updated: <span id="lastUpdated"></span> | Advanced Dashboard with Multi-Level Filtering</p>
+        </div>
+    </div>
+
+    <script>
+        // Sample data - expanded
+        const rawData = {
+            'APRIL': [
+                {am: 'Chamanth', team: 'POD-Chamath', priority: 'P2', date: '2026-02-16', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
+                {am: 'Chamanth', team: 'POD-Chamath', priority: 'P2', date: '2026-02-17', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
+                {am: 'Chamanth', team: 'POD-Chamath', priority: 'P0', date: '2026-02-27', connected: 1, demo: 1, intent: 1, payment: 1, closed: 1, revenue: 120000},
+                {am: 'Saikumar', team: 'POD-Sanjay', priority: 'P1', date: '2026-02-05', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
+                {am: 'Saikumar', team: 'POD-Sanjay', priority: 'P2', date: '2026-02-10', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
+                {am: 'Sanjay', team: 'POD-Sanjay', priority: 'P3', date: '2026-02-15', connected: 1, demo: 1, intent: 0, payment: 0, closed: 0, revenue: 0},
+                {am: 'Sarthak', team: 'POD-Chamath', priority: 'P2', date: '2026-02-20', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
+                {am: 'Ved', team: 'POD-Chamath', priority: 'P1', date: '2026-02-22', connected: 1, demo: 1, intent: 0, payment: 1, closed: 1, revenue: 100000},
+            ]
+        };
+
+        let filteredData = JSON.parse(JSON.stringify(rawData));
+
+        // Helper functions
+        function formatCurrency(value) {
+            return '₹' + new Intl.NumberFormat('en-IN').format(Math.round(value));
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('en-IN').format(Math.round(value));
+        }
+
+        function calculateRate(num, denom) {
+            return denom > 0 ? ((num / denom) * 100).toFixed(1) : 0;
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            setTimeout(() => {
+                if (tabName === 'active-month') {
+                    renderActiveMonth();
+                } else if (tabName === 'am-breakdown') {
+                    renderAMBreakdown();
+                } else if (tabName === 'team-breakdown') {
+                    renderTeamBreakdown();
+                } else if (tabName === 'mom-tracker') {
+                    renderMOM();
+                } else if (tabName === 'funnel-view') {
+                    renderFunnelView();
+                }
+            }, 100);
+        }
+
+        // Apply filters
+        function applyFilters(tabName) {
+            const amFilter = document.getElementById(`am-filter-${getFilterSuffix(tabName)}`)?.value || '';
+            const teamFilter = document.getElementById(`team-filter-${getFilterSuffix(tabName)}`)?.value || '';
+            const programFilter = document.getElementById(`program-filter-${getFilterSuffix(tabName)}`)?.value || '';
+            const dateFrom = document.getElementById(`date-from-${getFilterSuffix(tabName)}`)?.value || '';
+            const dateTo = document.getElementById(`date-to-${getFilterSuffix(tabName)}`)?.value || '';
+
+            filteredData = JSON.parse(JSON.stringify(rawData));
+
+            for (let month in filteredData) {
+                filteredData[month] = filteredData[month].filter(row => {
+                    if (amFilter && row.am !== amFilter) return false;
+                    if (teamFilter && row.team !== teamFilter) return false;
+                    if (programFilter && row.priority !== programFilter) return false;
+                    if (dateFrom && row.date < dateFrom) return false;
+                    if (dateTo && row.date > dateTo) return false;
+                    return true;
+                });
+            }
+
+            // Show filter summary
+            const summaryText = `Active Filters: ${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${dateFrom ? 'From: ' + dateFrom + ' ' : ''}${dateTo ? 'To: ' + dateTo : ''}`;
+            const summaryEl = document.getElementById(`filter-summary-${getFilterSuffix(tabName)}`);
+            if (amFilter || teamFilter || programFilter || dateFrom || dateTo) {
+                summaryEl.textContent = summaryText;
+                summaryEl.style.display = 'block';
+            } else {
+                summaryEl.style.display = 'none';
+            }
+
+            // Re-render current tab
+            const currentTab = document.querySelector('.tab-content.active').id;
+            if (currentTab === 'active-month') renderActiveMonth();
+            else if (currentTab === 'am-breakdown') renderAMBreakdown();
+            else if (currentTab === 'team-breakdown') renderTeamBreakdown();
+            else if (currentTab === 'mom-tracker') renderMOM();
+            else if (currentTab === 'funnel-view') renderFunnelView();
+        }
+
+        function clearFilters(tabName) {
+            const suffix = getFilterSuffix(tabName);
+            document.getElementById(`am-filter-${suffix}`).value = '';
+            document.getElementById(`team-filter-${suffix}`).value = '';
+            document.getElementById(`program-filter-${suffix}`).value = '';
+            document.getElementById(`date-from-${suffix}`).value = '';
+            document.getElementById(`date-to-${suffix}`).value = '';
+            
+            filteredData = JSON.parse(JSON.stringify(rawData));
+            document.getElementById(`filter-summary-${suffix}`).style.display = 'none';
+
+            applyFilters(tabName);
+        }
+
+        function getFilterSuffix(tabName) {
+            const map = {
+                'active-month': 'active',
+                'am-breakdown': 'am',
+                'team-breakdown': 'team',
+                'mom-tracker': 'mom',
+                'funnel-view': 'funnel'
+            };
+            return map[tabName];
+        }
+
+        // Render functions
+        function renderActiveMonth() {
+            const april = filteredData['APRIL'];
+            const total = april.length;
+            const connected = april.filter(r => r.connected).length;
+            const demo = april.filter(r => r.demo).length;
+            const intent = april.filter(r => r.intent).length;
+            const payment = april.filter(r => r.payment).length;
+            const closed = april.filter(r => r.closed).length;
+            const revenue = april.reduce((sum, r) => sum + r.revenue, 0);
+
+            const kpis = [
+                {label: 'Total Sellers', value: formatNumber(total), subtext: 'Active prospects', class: 'success'},
+                {label: 'Connected', value: calculateRate(connected, total) + '%', subtext: connected + ' / ' + total, class: 'success'},
+                {label: 'Demo Completed', value: calculateRate(demo, total) + '%', subtext: demo + ' / ' + total, class: 'success'},
+                {label: 'Intent', value: calculateRate(intent, total) + '%', subtext: intent + ' / ' + total, class: 'warning'},
+                {label: 'Payment Link', value: calculateRate(payment, total) + '%', subtext: payment + ' / ' + total, class: 'alert'},
+                {label: 'Closures', value: closed, subtext: formatCurrency(revenue), class: 'alert'},
+            ];
+
+            document.getElementById('activeMonthKPIs').innerHTML = kpis.map(k => `
+                <div class="kpi-card ${k.class}">
+                    <div class="kpi-label">${k.label}</div>
+                    <div class="kpi-value">${k.value}</div>
+                    <div class="kpi-subtext">${k.subtext}</div>
+                </div>
+            `).join('');
+
+            // Render funnel stages
+            const stages = [
+                {name: 'Total', value: total, rate: '100%', class: 'high'},
+                {name: 'Connected', value: connected, rate: calculateRate(connected, total) + '%', class: connected / total > 0.8 ? 'high' : 'medium'},
+                {name: 'Demo', value: demo, rate: calculateRate(demo, total) + '%', class: demo / total > 0.8 ? 'high' : 'medium'},
+                {name: 'Intent', value: intent, rate: calculateRate(intent, total) + '%', class: 'medium'},
+                {name: 'Payment', value: payment, rate: calculateRate(payment, total) + '%', class: 'low'},
+                {name: 'Closed', value: closed, rate: calculateRate(closed, total) + '%', class: 'low'},
+            ];
+
+            document.getElementById('aprilFunnelStages').innerHTML = '<div class="funnel-section">' + stages.map(s => `
+                <div class="funnel-stage ${s.class}">
+                    <div class="funnel-stage-name">${s.name}</div>
+                    <div class="funnel-stage-value">${formatNumber(s.value)}</div>
+                    <div class="funnel-stage-rate">${s.rate}</div>
+                </div>
+            `).join('') + '</div>';
+
+            // Charts
+            initConversionChart(april, total);
+            initRevenueChart(revenue);
+        }
+
+        function renderAMBreakdown() {
+            const april = filteredData['APRIL'];
+            
+            const amStats = {};
+            april.forEach(row => {
+                if (!amStats[row.am]) {
+                    amStats[row.am] = {am: row.am, total: 0, connected: 0, demo: 0, intent: 0, payment: 0, closed: 0, revenue: 0};
+                }
+                amStats[row.am].total++;
+                amStats[row.am].connected += row.connected;
+                amStats[row.am].demo += row.demo;
+                amStats[row.am].intent += row.intent;
+                amStats[row.am].payment += row.payment;
+                amStats[row.am].closed += row.closed;
+                amStats[row.am].revenue += row.revenue;
+            });
+
+            const amArray = Object.values(amStats);
+
+            document.getElementById('amTable').innerHTML = `
+                <tr>
+                    <th>AM</th><th>Total</th><th>Connected %</th><th>Demo %</th><th>Intent %</th><th>Payment %</th><th>Closures</th><th>Revenue</th>
+                </tr>
+                ${amArray.map(am => `
+                    <tr>
+                        <td><strong>${am.am}</strong></td>
+                        <td>${am.total}</td>
+                        <td>${calculateRate(am.connected, am.total)}%</td>
+                        <td>${calculateRate(am.demo, am.total)}%</td>
+                        <td>${calculateRate(am.intent, am.total)}%</td>
+                        <td>${calculateRate(am.payment, am.total)}%</td>
+                        <td>${am.closed}</td>
+                        <td>${formatCurrency(am.revenue)}</td>
+                    </tr>
+                `).join('')}
+            `;
+
+            initAMChart(amArray);
+        }
+
+        function renderTeamBreakdown() {
+            const april = filteredData['APRIL'];
+            
+            const teamStats = {};
+            april.forEach(row => {
+                if (!teamStats[row.team]) {
+                    teamStats[row.team] = {team: row.team, total: 0, connected: 0, demo: 0, intent: 0, payment: 0, closed: 0, revenue: 0};
+                }
+                teamStats[row.team].total++;
+                teamStats[row.team].connected += row.connected;
+                teamStats[row.team].demo += row.demo;
+                teamStats[row.team].intent += row.intent;
+                teamStats[row.team].payment += row.payment;
+                teamStats[row.team].closed += row.closed;
+                teamStats[row.team].revenue += row.revenue;
+            });
+
+            const teamArray = Object.values(teamStats);
+
+            document.getElementById('teamTable').innerHTML = `
+                <tr>
+                    <th>Team</th><th>Total</th><th>Connected %</th><th>Demo %</th><th>Intent %</th><th>Payment %</th><th>Closures</th><th>Revenue</th>
+                </tr>
+                ${teamArray.map(team => `
+                    <tr>
+                        <td><strong>${team.team}</strong></td>
+                        <td>${team.total}</td>
+                        <td>${calculateRate(team.connected, team.total)}%</td>
+                        <td>${calculateRate(team.demo, team.total)}%</td>
+                        <td>${calculateRate(team.intent, team.total)}%</td>
+                        <td>${calculateRate(team.payment, team.total)}%</td>
+                        <td>${team.closed}</td>
+                        <td>${formatCurrency(team.revenue)}</td>
+                    </tr>
+                `).join('')}
+            `;
+
+            initTeamCharts(teamArray);
+        }
+
+        function renderMOM() {
+            const monthStats = {};
+            for (let month in filteredData) {
+                const data = filteredData[month];
+                monthStats[month] = {
+                    total: data.length,
+                    connected: data.filter(r => r.connected).length,
+                    demo: data.filter(r => r.demo).length,
+                    intent: data.filter(r => r.intent).length,
+                    payment: data.filter(r => r.payment).length,
+                    closed: data.filter(r => r.closed).length,
+                    revenue: data.reduce((sum, r) => sum + r.revenue, 0),
+                };
+            }
+
+            document.getElementById('momTable').innerHTML = `
+                <tr>
+                    <th>Month</th><th>Total</th><th>Connected %</th><th>Demo %</th><th>Intent %</th><th>Payment %</th><th>Closures</th><th>Revenue</th>
+                </tr>
+                ${Object.entries(monthStats).map(([month, stats]) => `
+                    <tr>
+                        <td><strong>${month}</strong></td>
+                        <td>${stats.total}</td>
+                        <td>${calculateRate(stats.connected, stats.total)}%</td>
+                        <td>${calculateRate(stats.demo, stats.total)}%</td>
+                        <td>${calculateRate(stats.intent, stats.total)}%</td>
+                        <td>${calculateRate(stats.payment, stats.total)}%</td>
+                        <td>${stats.closed}</td>
+                        <td>${formatCurrency(stats.revenue)}</td>
+                    </tr>
+                `).join('')}
+            `;
+
+            initMOMCharts(monthStats);
+        }
+
+        function renderFunnelView() {
+            const april = filteredData['APRIL'];
+            const total = april.length;
+            const connected = april.filter(r => r.connected).length;
+            const demo = april.filter(r => r.demo).length;
+            const intent = april.filter(r => r.intent).length;
+            const payment = april.filter(r => r.payment).length;
+            const closed = april.filter(r => r.closed).length;
+
+            // Render funnel stages
+            const stages = [
+                {name: 'Total Pool', value: total, rate: '100%', color: '#667eea'},
+                {name: 'Connected', value: connected, rate: calculateRate(connected, total) + '%', color: '#10b981'},
+                {name: 'Demo', value: demo, rate: calculateRate(demo, total) + '%', color: '#3b82f6'},
+                {name: 'Intent', value: intent, rate: calculateRate(intent, total) + '%', color: '#f59e0b'},
+                {name: 'Payment Link', value: payment, rate: calculateRate(payment, total) + '%', color: '#ef4444'},
+                {name: 'Closed', value: closed, rate: calculateRate(closed, total) + '%', color: '#8b5cf6'},
+            ];
+
+            document.getElementById('funnelStagesContainer').innerHTML = '<div class="funnel-section">' + stages.map(s => `
+                <div class="funnel-stage" style="background: linear-gradient(135deg, ${s.color} 0%, ${s.color}99 100%);">
+                    <div class="funnel-stage-name">${s.name}</div>
+                    <div class="funnel-stage-value">${formatNumber(s.value)}</div>
+                    <div class="funnel-stage-rate">${s.rate}</div>
+                </div>
+            `).join('') + '</div>';
+
+            // Funnel details table
+            document.getElementById('funnelDetailsTable').innerHTML = `
+                <tr>
+                    <th>Stage</th><th>Count</th><th>Conversion %</th><th>Drop-off</th>
+                </tr>
+                <tr>
+                    <td>Connected</td><td>${connected}</td><td>${calculateRate(connected, total)}%</td><td>${total - connected}</td>
+                </tr>
+                <tr>
+                    <td>Demo</td><td>${demo}</td><td>${calculateRate(demo, connected)}%</td><td>${connected - demo}</td>
+                </tr>
+                <tr>
+                    <td>Intent</td><td>${intent}</td><td>${calculateRate(intent, demo)}%</td><td>${demo - intent}</td>
+                </tr>
+                <tr>
+                    <td>Payment</td><td>${payment}</td><td>${calculateRate(payment, intent)}%</td><td>${intent - payment}</td>
+                </tr>
+                <tr>
+                    <td>Closed</td><td>${closed}</td><td>${calculateRate(closed, payment)}%</td><td>${payment - closed}</td>
+                </tr>
+            `;
+
+            initFunnelCharts(stages, total);
+        }
+
+        // Chart initialization functions
+        function initConversionChart(data, total) {
+            Chart.register(ChartDataLabels);
+            const ctx = document.getElementById('conversionChart').getContext('2d');
+            if (window.conversionChartInstance) window.conversionChartInstance.destroy();
+            
+            window.conversionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Connected', 'Demo', 'Intent', 'Payment', 'Closed'],
+                    datasets: [{
+                        label: 'Conversion %',
+                        data: [
+                            calculateRate(data.filter(r => r.connected).length, total),
+                            calculateRate(data.filter(r => r.demo).length, total),
+                            calculateRate(data.filter(r => r.intent).length, total),
+                            calculateRate(data.filter(r => r.payment).length, total),
+                            calculateRate(data.filter(r => r.closed).length, total),
+                        ],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                    }]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {y: {max: 100}}}
+            });
+        }
+
+        function initRevenueChart(revenue) {
+            Chart.register(ChartDataLabels);
+            const ctx = document.getElementById('revenueChart').getContext('2d');
+            if (window.revenueChartInstance) window.revenueChartInstance.destroy();
+            
+            window.revenueChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Revenue Pitched', 'Revenue Closed'],
+                    datasets: [{
+                        data: [revenue, 0],
+                        backgroundColor: ['#667eea', '#f59e0b'],
+                    }]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}}
+            });
+        }
+
+        function initAMChart(amArray) {
+            Chart.register(ChartDataLabels);
+            const ctx = document.getElementById('amComparisonChart').getContext('2d');
+            if (window.amChartInstance) window.amChartInstance.destroy();
+            
+            window.amChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: amArray.map(a => a.am),
+                    datasets: [
+                        {label: 'Closures', data: amArray.map(a => a.closed), backgroundColor: '#ef4444'},
+                        {label: 'Intent', data: amArray.map(a => a.intent), backgroundColor: '#3b82f6'},
+                        {label: 'Demo', data: amArray.map(a => a.demo), backgroundColor: '#10b981'},
+                    ]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}, scales: {x: {stacked: false}, y: {stacked: false}}}
+            });
+        }
+
+        function initTeamCharts(teamArray) {
+            Chart.register(ChartDataLabels);
+            
+            const ctx1 = document.getElementById('teamComparisonChart').getContext('2d');
+            if (window.teamChartInstance1) window.teamChartInstance1.destroy();
+            window.teamChartInstance1 = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: teamArray.map(t => t.team),
+                    datasets: [{label: 'Total Sellers', data: teamArray.map(t => t.total), backgroundColor: '#667eea'}]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}}
+            });
+
+            const ctx2 = document.getElementById('teamRevenueChart').getContext('2d');
+            if (window.teamChartInstance2) window.teamChartInstance2.destroy();
+            window.teamChartInstance2 = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: teamArray.map(t => t.team),
+                    datasets: [{label: 'Revenue Pitched', data: teamArray.map(t => t.revenue), backgroundColor: '#764ba2'}]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}, scales: {y: {ticks: {callback: v => formatCurrency(v)}}}}
+            });
+        }
+
+        function initMOMCharts(monthStats) {
+            Chart.register(ChartDataLabels);
+            const months = Object.keys(monthStats);
+            const data = Object.values(monthStats);
+
+            const ctx1 = document.getElementById('momSellersChart').getContext('2d');
+            if (window.momChartInstance1) window.momChartInstance1.destroy();
+            window.momChartInstance1 = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{label: 'Total Sellers', data: data.map(d => d.total), borderColor: '#667eea', backgroundColor: 'rgba(102, 126, 234, 0.1)', tension: 0.4, fill: true}]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}}
+            });
+
+            const ctx2 = document.getElementById('momConversionChart').getContext('2d');
+            if (window.momChartInstance2) window.momChartInstance2.destroy();
+            window.momChartInstance2 = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {label: 'Connected %', data: data.map(d => calculateRate(d.connected, d.total)), borderColor: '#10b981'},
+                        {label: 'Demo %', data: data.map(d => calculateRate(d.demo, d.total)), borderColor: '#3b82f6'},
+                        {label: 'Intent %', data: data.map(d => calculateRate(d.intent, d.total)), borderColor: '#f59e0b'},
+                    ]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}, scales: {y: {max: 100}}}
+            });
+        }
+
+        function initFunnelCharts(stages, total) {
+            Chart.register(ChartDataLabels);
+
+            const ctx1 = document.getElementById('funnelDropoffChart').getContext('2d');
+            if (window.funnelChartInstance1) window.funnelChartInstance1.destroy();
+            window.funnelChartInstance1 = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Connected→Demo', 'Demo→Intent', 'Intent→Payment', 'Payment→Closed'],
+                    datasets: [{
+                        label: 'Drop-off Count',
+                        data: [
+                            stages[1].value - stages[2].value,
+                            stages[2].value - stages[3].value,
+                            stages[3].value - stages[4].value,
+                            stages[4].value - stages[5].value,
+                        ],
+                        backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#667eea'],
+                    }]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}}
+            });
+
+            const ctx2 = document.getElementById('funnelDistChart').getContext('2d');
+            if (window.funnelChartInstance2) window.funnelChartInstance2.destroy();
+            window.funnelChartInstance2 = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: stages.map(s => s.name),
+                    datasets: [{
+                        data: stages.map(s => s.value),
+                        backgroundColor: stages.map(s => s.color),
+                    }]
+                },
+                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}}
+            });
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            renderActiveMonth();
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN');
+        });
+    </script>
+</body>
+</html>
