@@ -687,6 +687,18 @@
             <div id="mom-tracker" class="tab-content">
                 <div class="filters-panel">
                     <div class="filter-group">
+                        <label class="filter-label">Onboarding Month</label>
+                        <select id="onboarding-month-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All Onboarding Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Closure Month</label>
+                        <select id="closure-month-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All Closure Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
                         <label class="filter-label">Account Manager</label>
                         <select id="am-filter-mom" onchange="applyFilters('mom-tracker')">
                             <option value="">All AMs</option>
@@ -1001,7 +1013,7 @@
             tabs.forEach(tabName => {
                 const suffix = getFilterSuffix(tabName);
                 const panel = document.querySelector(`#${tabName} .filters-panel`);
-                if (!panel || panel.querySelector(`[data-dual-filters="${suffix}"]`)) return;
+                if (!panel || panel.querySelector(`[data-dual-filters="${suffix}"]`) || document.getElementById(`onboarding-month-filter-${suffix}`) || document.getElementById(`closure-month-filter-${suffix}`)) return;
 
                 const actionsGroup = panel.querySelector('.filter-group:last-child');
                 const wrapper = document.createElement('div');
