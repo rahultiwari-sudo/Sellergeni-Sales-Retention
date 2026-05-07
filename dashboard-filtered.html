@@ -395,6 +395,7 @@
         <div class="tab-container">
             <div class="tab-navigation">
                 <button class="tab-btn active" onclick="switchTab('active-month')">📅 Active Month</button>
+                <button class="tab-btn" onclick="switchTab('revenue-view')">💰 Revenue View</button>
                 <button class="tab-btn" onclick="switchTab('am-breakdown')">👤 AM Breakdown</button>
                 <button class="tab-btn" onclick="switchTab('team-breakdown')">👥 Team Breakdown</button>
                 <button class="tab-btn" onclick="switchTab('mom-tracker')">📈 Month-on-Month</button>
@@ -453,6 +454,18 @@
                 </div>
                 <div class="filter-summary" id="filter-summary-active" style="display:none;"></div>
                 <div class="kpi-grid" id="activeMonthKPIs"></div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>💰 Revenue Snapshot</h3>
+                        <div class="kpi-grid" id="activeRevenueKPIs"></div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>📈 Revenue Mix</h3>
+                        <div class="chart-container">
+                            <canvas id="activeRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
                 <div class="chart-card">
                     <h3>🎯 Conversion Funnel</h3>
                     <div id="monthFunnelStages"></div>
@@ -470,6 +483,78 @@
                             <canvas id="revenueChart"></canvas>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Revenue View Tab -->
+            <div id="revenue-view" class="tab-content">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Month</label>
+                        <select id="month-filter-revenue" onchange="applyFilters('revenue-view')">
+                            <option value="">All Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Account Manager</label>
+                        <select id="am-filter-revenue" onchange="applyFilters('revenue-view')">
+                            <option value="">All AMs</option>
+                            <option value="Chamanth">Chamanth</option>
+                            <option value="Saikumar">Saikumar</option>
+                            <option value="Sanjay">Sanjay</option>
+                            <option value="Sarthak">Sarthak</option>
+                            <option value="Ved">Ved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-revenue" onchange="applyFilters('revenue-view')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-revenue" onchange="applyFilters('revenue-view')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="date-from-revenue" onchange="applyFilters('revenue-view')">
+                            <input type="date" id="date-to-revenue" onchange="applyFilters('revenue-view')">
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('revenue-view')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('revenue-view')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-revenue" style="display:none;"></div>
+                <div class="kpi-grid" id="revenueViewKPIs"></div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Revenue Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueViewChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>MRR by AM</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueAmChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 Revenue Details</h3>
+                    <table class="stats-table" id="revenueTable"></table>
                 </div>
             </div>
 
@@ -786,6 +871,14 @@
             return Number.isFinite(numeric) ? numeric : 0;
         }
 
+        function parseDurationMonths(value) {
+            const text = normalizeText(value).toLowerCase();
+            const match = text.match(/(\d+(?:\.\d+)?)/);
+            if (!match) return 0;
+            const months = Number(match[1]);
+            return Number.isFinite(months) ? months : 0;
+        }
+
         function normalizeDateValue(value) {
             if (!value) return '';
             if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -811,6 +904,10 @@
         }
 
         function mapSheetRow(row) {
+            const amountPitched = toNumberValue(row['Amount Pitched']);
+            const closureAmount = toNumberValue(row['Closure Amount']);
+            const durationMonths = parseDurationMonths(row['Duration Pitched']);
+
             return {
                 am: normalizeText(row['AM']),
                 team: normalizeText(row['Team']),
@@ -821,7 +918,11 @@
                 intent: toBooleanMetric(row['Intent']),
                 payment: toBooleanMetric(row['Payment Link Sent']),
                 closed: toBooleanMetric(row['Closure']),
-                revenue: toNumberValue(row['Amount Pitched']) || toNumberValue(row['Closure Amount']),
+                amountPitched,
+                closureAmount,
+                durationMonths,
+                mrr: amountPitched && durationMonths ? amountPitched / durationMonths : 0,
+                revenue: amountPitched || closureAmount,
             };
         }
 
@@ -853,7 +954,7 @@
 
         function populateMonthFilters() {
             const months = getAvailableMonths();
-            const monthFilterIds = ['month-filter-active', 'month-filter-am', 'month-filter-team', 'month-filter-funnel'];
+            const monthFilterIds = ['month-filter-active', 'month-filter-revenue', 'month-filter-am', 'month-filter-team', 'month-filter-funnel'];
 
             monthFilterIds.forEach(id => {
                 const select = document.getElementById(id);
@@ -881,9 +982,24 @@
             return filteredData[monthKey] || [];
         }
 
+        function summarizeRows(rows) {
+            return {
+                total: rows.length,
+                connected: rows.filter(r => r.connected).length,
+                demo: rows.filter(r => r.demo).length,
+                intent: rows.filter(r => r.intent).length,
+                payment: rows.filter(r => r.payment).length,
+                closed: rows.filter(r => r.closed).length,
+                pitchedRevenue: rows.reduce((sum, r) => sum + (r.amountPitched || 0), 0),
+                closureRevenue: rows.reduce((sum, r) => sum + (r.closureAmount || 0), 0),
+                mrr: rows.reduce((sum, r) => sum + (r.mrr || 0), 0),
+            };
+        }
+
         function renderCurrentTab() {
             const currentTab = document.querySelector('.tab-content.active')?.id || 'active-month';
             if (currentTab === 'active-month') renderActiveMonth();
+            else if (currentTab === 'revenue-view') renderRevenueView();
             else if (currentTab === 'am-breakdown') renderAMBreakdown();
             else if (currentTab === 'team-breakdown') renderTeamBreakdown();
             else if (currentTab === 'mom-tracker') renderMOM();
@@ -917,9 +1033,12 @@
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            if (window.event && window.event.target) {
+                window.event.target.classList.add('active');
+            }
 
             applyFilters(tabName);
+            renderCurrentTab();
         }
 
         // Apply filters
@@ -983,6 +1102,7 @@
         function getFilterSuffix(tabName) {
             const map = {
                 'active-month': 'active',
+                'revenue-view': 'revenue',
                 'am-breakdown': 'am',
                 'team-breakdown': 'team',
                 'mom-tracker': 'mom',
@@ -995,13 +1115,13 @@
         function renderActiveMonth() {
             const monthKey = getSelectedMonthKey('active-month');
             const monthData = getSelectedMonthData('active-month');
-            const total = monthData.length;
-            const connected = monthData.filter(r => r.connected).length;
-            const demo = monthData.filter(r => r.demo).length;
-            const intent = monthData.filter(r => r.intent).length;
-            const payment = monthData.filter(r => r.payment).length;
-            const closed = monthData.filter(r => r.closed).length;
-            const revenue = monthData.reduce((sum, r) => sum + r.revenue, 0);
+            const summary = summarizeRows(monthData);
+            const total = summary.total;
+            const connected = summary.connected;
+            const demo = summary.demo;
+            const intent = summary.intent;
+            const payment = summary.payment;
+            const closed = summary.closed;
 
             const kpis = [
                 {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'purple'},
@@ -1010,7 +1130,7 @@
                 {label: 'Demo Completed', value: calculateRate(demo, total) + '%', subtext: demo + ' / ' + total, class: 'success'},
                 {label: 'Intent', value: calculateRate(intent, total) + '%', subtext: intent + ' / ' + total, class: 'warning'},
                 {label: 'Payment Link', value: calculateRate(payment, total) + '%', subtext: payment + ' / ' + total, class: 'alert'},
-                {label: 'Closures', value: closed, subtext: formatCurrency(revenue), class: 'alert'},
+                {label: 'Closures', value: closed, subtext: formatCurrency(summary.closureRevenue), class: 'alert'},
             ];
 
             document.getElementById('activeMonthKPIs').innerHTML = kpis.map(k => `
@@ -1039,9 +1159,70 @@
                 </div>
             `).join('') + '</div>';
 
+            document.getElementById('activeRevenueKPIs').innerHTML = [
+                {label: 'MRR', value: formatCurrency(summary.mrr), subtext: 'Monthly recurring revenue', class: 'success'},
+                {label: 'Pitched Revenue', value: formatCurrency(summary.pitchedRevenue), subtext: 'Amount pitched this month', class: 'warning'},
+                {label: 'Closure Revenue', value: formatCurrency(summary.closureRevenue), subtext: 'Revenue recorded at closure', class: 'alert'},
+            ].map(k => `
+                <div class="kpi-card ${k.class}">
+                    <div class="kpi-label">${k.label}</div>
+                    <div class="kpi-value">${k.value}</div>
+                    <div class="kpi-subtext">${k.subtext}</div>
+                </div>
+            `).join('');
+
             // Charts
             initConversionChart(monthData, total);
-            initRevenueChart(revenue);
+            initRevenueChart(summary);
+            initActiveRevenueChart(summary);
+        }
+
+        function renderRevenueView() {
+            const monthKey = getSelectedMonthKey('revenue-view');
+            const monthData = getSelectedMonthData('revenue-view');
+            const summary = summarizeRows(monthData);
+
+            document.getElementById('revenueViewKPIs').innerHTML = [
+                {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'purple'},
+                {label: 'MRR', value: formatCurrency(summary.mrr), subtext: 'Monthly recurring revenue', class: 'success'},
+                {label: 'Pitched Revenue', value: formatCurrency(summary.pitchedRevenue), subtext: 'Amount pitched this month', class: 'warning'},
+                {label: 'Closure Revenue', value: formatCurrency(summary.closureRevenue), subtext: 'Revenue recorded at closure', class: 'alert'},
+            ].map(k => `
+                <div class="kpi-card ${k.class}">
+                    <div class="kpi-label">${k.label}</div>
+                    <div class="kpi-value">${k.value}</div>
+                    <div class="kpi-subtext">${k.subtext}</div>
+                </div>
+            `).join('');
+
+            const byAm = {};
+            monthData.forEach(row => {
+                if (!byAm[row.am]) byAm[row.am] = { am: row.am, pitchedRevenue: 0, closureRevenue: 0, mrr: 0, total: 0 };
+                byAm[row.am].total++;
+                byAm[row.am].pitchedRevenue += row.amountPitched || 0;
+                byAm[row.am].closureRevenue += row.closureAmount || 0;
+                byAm[row.am].mrr += row.mrr || 0;
+            });
+
+            const amArray = Object.values(byAm);
+
+            document.getElementById('revenueTable').innerHTML = `
+                <tr>
+                    <th>AM</th><th>Total</th><th>MRR</th><th>Pitched Revenue</th><th>Closure Revenue</th>
+                </tr>
+                ${amArray.map(am => `
+                    <tr>
+                        <td><strong>${am.am}</strong></td>
+                        <td>${am.total}</td>
+                        <td>${formatCurrency(am.mrr)}</td>
+                        <td>${formatCurrency(am.pitchedRevenue)}</td>
+                        <td>${formatCurrency(am.closureRevenue)}</td>
+                    </tr>
+                `).join('')}
+            `;
+
+            initRevenueViewChart(summary);
+            initRevenueAmChart(amArray);
         }
 
         function renderAMBreakdown() {
@@ -1127,21 +1308,12 @@
         function renderMOM() {
             const monthStats = {};
             for (let month in filteredData) {
-                const data = filteredData[month];
-                monthStats[month] = {
-                    total: data.length,
-                    connected: data.filter(r => r.connected).length,
-                    demo: data.filter(r => r.demo).length,
-                    intent: data.filter(r => r.intent).length,
-                    payment: data.filter(r => r.payment).length,
-                    closed: data.filter(r => r.closed).length,
-                    revenue: data.reduce((sum, r) => sum + r.revenue, 0),
-                };
+                monthStats[month] = summarizeRows(filteredData[month]);
             }
 
             document.getElementById('momTable').innerHTML = `
                 <tr>
-                    <th>Month</th><th>Total</th><th>Connected %</th><th>Demo %</th><th>Intent %</th><th>Payment %</th><th>Closures</th><th>Revenue</th>
+                    <th>Month</th><th>Total</th><th>Connected %</th><th>Demo %</th><th>Intent %</th><th>Payment %</th><th>Closures</th><th>Pitched Revenue</th><th>Closure Revenue</th><th>MRR</th>
                 </tr>
                 ${Object.entries(monthStats).map(([month, stats]) => `
                     <tr>
@@ -1152,7 +1324,9 @@
                         <td>${calculateRate(stats.intent, stats.total)}%</td>
                         <td>${calculateRate(stats.payment, stats.total)}%</td>
                         <td>${stats.closed}</td>
-                        <td>${formatCurrency(stats.revenue)}</td>
+                        <td>${formatCurrency(stats.pitchedRevenue)}</td>
+                        <td>${formatCurrency(stats.closureRevenue)}</td>
+                        <td>${formatCurrency(stats.mrr)}</td>
                     </tr>
                 `).join('')}
             `;
@@ -1250,13 +1424,103 @@
             window.revenueChartInstance = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Revenue Pitched', 'Revenue Closed'],
+                    labels: ['Pitched Revenue', 'Closure Revenue'],
                     datasets: [{
-                        data: [revenue, 0],
+                        data: [revenue.pitchedRevenue, revenue.closureRevenue],
                         backgroundColor: ['#667eea', '#f59e0b'],
                     }]
                 },
                 options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}}
+            });
+        }
+
+        function initActiveRevenueChart(summary) {
+            Chart.register(ChartDataLabels);
+            const ctx = document.getElementById('activeRevenueChart').getContext('2d');
+            if (window.activeRevenueChartInstance) window.activeRevenueChartInstance.destroy();
+
+            window.activeRevenueChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['MRR', 'Pitched Revenue', 'Closure Revenue'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [summary.mrr, summary.pitchedRevenue, summary.closureRevenue],
+                        backgroundColor: ['#10b981', '#667eea', '#f59e0b'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => formatCurrency(value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initRevenueViewChart(summary) {
+            Chart.register(ChartDataLabels);
+            const ctx = document.getElementById('revenueViewChart').getContext('2d');
+            if (window.revenueViewChartInstance) window.revenueViewChartInstance.destroy();
+
+            window.revenueViewChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['MRR', 'Pitched Revenue', 'Closure Revenue'],
+                    datasets: [{
+                        label: 'Revenue',
+                        data: [summary.mrr, summary.pitchedRevenue, summary.closureRevenue],
+                        backgroundColor: ['#10b981', '#667eea', '#f59e0b'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => formatCurrency(value)
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function initRevenueAmChart(amArray) {
+            Chart.register(ChartDataLabels);
+            const ctx = document.getElementById('revenueAmChart').getContext('2d');
+            if (window.revenueAmChartInstance) window.revenueAmChartInstance.destroy();
+
+            window.revenueAmChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: amArray.map(am => am.am),
+                    datasets: [{
+                        label: 'MRR',
+                        data: amArray.map(am => am.mrr),
+                        backgroundColor: '#10b981',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => formatCurrency(value)
+                            }
+                        }
+                    }
+                }
             });
         }
 
@@ -1328,12 +1592,23 @@
                 data: {
                     labels: months,
                     datasets: [
-                        {label: 'Connected %', data: data.map(d => calculateRate(d.connected, d.total)), borderColor: '#10b981'},
-                        {label: 'Demo %', data: data.map(d => calculateRate(d.demo, d.total)), borderColor: '#3b82f6'},
-                        {label: 'Intent %', data: data.map(d => calculateRate(d.intent, d.total)), borderColor: '#f59e0b'},
+                        {label: 'Pitched Revenue', data: data.map(d => d.pitchedRevenue), borderColor: '#667eea', backgroundColor: 'rgba(102, 126, 234, 0.1)', tension: 0.3, fill: false},
+                        {label: 'Closure Revenue', data: data.map(d => d.closureRevenue), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: false},
+                        {label: 'MRR', data: data.map(d => d.mrr), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: false},
                     ]
                 },
-                options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'}}, scales: {y: {max: 100}}}
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {legend: {position: 'bottom'}},
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: value => formatCurrency(value)
+                            }
+                        }
+                    }
+                }
             });
         }
 
