@@ -981,6 +981,13 @@
             return String(value ?? '').trim();
         }
 
+        function excelSerialToDate(serialValue) {
+            const serial = Number(serialValue);
+            if (!Number.isFinite(serial) || serial <= 0) return null;
+            const excelEpoch = Date.UTC(1899, 11, 30);
+            return new Date(excelEpoch + serial * 86400000);
+        }
+
         function toBooleanMetric(value) {
             const normalized = normalizeText(value).toLowerCase();
             if (!normalized) return false;
@@ -1010,11 +1017,25 @@
 
         function normalizeDateValue(value) {
             if (!value) return '';
+            if (typeof value === 'number' && Number.isFinite(value)) {
+                const excelDate = excelSerialToDate(value);
+                if (excelDate && !Number.isNaN(excelDate.getTime())) {
+                    return excelDate.toISOString().slice(0, 10);
+                }
+            }
+
             if (value instanceof Date && !Number.isNaN(value.getTime())) {
                 return value.toISOString().slice(0, 10);
             }
 
             const text = normalizeText(value);
+            if (/^\d+(?:\.\d+)?$/.test(text)) {
+                const excelDate = excelSerialToDate(text);
+                if (excelDate && !Number.isNaN(excelDate.getTime())) {
+                    return excelDate.toISOString().slice(0, 10);
+                }
+            }
+
             const parsed = new Date(text);
             if (!Number.isNaN(parsed.getTime())) {
                 return parsed.toISOString().slice(0, 10);
@@ -1247,8 +1268,23 @@
         }
 
         function parseDateSafe(dateText) {
+            if (typeof dateText === 'number' && Number.isFinite(dateText)) {
+                const excelDate = excelSerialToDate(dateText);
+                if (excelDate && !Number.isNaN(excelDate.getTime())) {
+                    return new Date(Date.UTC(excelDate.getUTCFullYear(), excelDate.getUTCMonth(), 1));
+                }
+            }
+
             const text = normalizeText(dateText);
             if (!text) return null;
+
+            if (/^\d+(?:\.\d+)?$/.test(text)) {
+                const excelDate = excelSerialToDate(text);
+                if (excelDate && !Number.isNaN(excelDate.getTime())) {
+                    return new Date(Date.UTC(excelDate.getUTCFullYear(), excelDate.getUTCMonth(), 1));
+                }
+            }
+
             const date = new Date(text);
             if (Number.isNaN(date.getTime())) return null;
             return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
