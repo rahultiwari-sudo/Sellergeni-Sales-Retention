@@ -1928,10 +1928,12 @@
                             monthKey: closureMonthKey,
                             mrr: 0,
                             closureRevenue: 0,
+                            closureCount: 0,
                             activeSellerSet: new Set(),
                         };
                     }
                     byMonth[closureMonthKey].closureRevenue = (byMonth[closureMonthKey].closureRevenue || 0) + closureAmount;
+                    byMonth[closureMonthKey].closureCount = (byMonth[closureMonthKey].closureCount || 0) + 1;
                 }
             });
 
@@ -1945,6 +1947,7 @@
                         arr: roundMoney(mrr * 12),
                         activeSellers: entry.activeSellerSet.size,
                         closureRevenue: roundMoney(entry.closureRevenue || 0),
+                        closureCount: entry.closureCount || 0,
                     };
                 });
         }
@@ -2422,6 +2425,7 @@
                     closed: 0,
                     pitchedRevenue: 0,
                     closureRevenue: entry.closureRevenue,
+                    closureCount: entry.closureCount || 0,
                     mrr: entry.mrr,
                     arr: entry.arr,
                     activeSellers: entry.activeSellers,
@@ -2450,7 +2454,7 @@
 
             document.getElementById('momTable').innerHTML = `
                 <tr>
-                    <th>Month</th><th>Active Sellers</th><th>MRR</th><th>ARR</th><th>Closed Revenue</th>
+                    <th>Month</th><th>Active Sellers</th><th>MRR</th><th>ARR</th><th>Accounts Closed</th><th>Closed Revenue</th>
                 </tr>
                 ${monthEntries.map(([month, stats]) => `
                     <tr>
@@ -2458,6 +2462,7 @@
                         <td>${stats.activeSellers}</td>
                         <td>${formatCurrency(stats.mrr)}</td>
                         <td>${formatCurrency(stats.arr)}</td>
+                        <td>${stats.closureCount || 0}</td>
                         <td>${formatCurrency(stats.closureRevenue || 0)}</td>
                     </tr>
                 `).join('')}
