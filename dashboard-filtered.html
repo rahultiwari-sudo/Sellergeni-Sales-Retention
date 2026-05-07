@@ -879,6 +879,14 @@
             return Number.isFinite(months) ? months : 0;
         }
 
+        function getFirstNonEmptyField(row, keys) {
+            for (const key of keys) {
+                const value = row[key];
+                if (normalizeText(value)) return value;
+            }
+            return '';
+        }
+
         function normalizeDateValue(value) {
             if (!value) return '';
             if (value instanceof Date && !Number.isNaN(value.getTime())) {
@@ -906,14 +914,25 @@
         function mapSheetRow(row) {
             const amountPitched = toNumberValue(row['Amount Pitched']);
             const closureAmount = toNumberValue(row['Closure Amount']);
-            const durationMonths = parseDurationMonths(row['Duration Pitched']);
+            const closureDurationMonths = parseDurationMonths(getFirstNonEmptyField(row, [
+                'Closure Duration (In Months)',
+                'Closure Duration',
+                'Closure Month',
+                'Closure Months',
+                'Duration (In Months)',
+                'Duration In Months',
+            ]));
             const isClosed = toBooleanMetric(row['Closure']);
+            const onboardingDate = normalizeDateValue(row['Date of Onboarding']);
+            const closureDate = normalizeDateValue(row['Closure Date']);
 
             return {
                 am: normalizeText(row['AM']),
                 team: normalizeText(row['Team']),
                 priority: normalizeText(row['Priority']),
-                date: normalizeDateValue(row['Date of Onboarding']),
+                date: onboardingDate,
+                onboardingDate,
+                closureDate,
                 connected: toBooleanMetric(row['Connected for Retention']),
                 demo: toBooleanMetric(row['Tool Demo Completed']),
                 intent: toBooleanMetric(row['Intent']),
@@ -921,8 +940,8 @@
                 closed: isClosed,
                 amountPitched,
                 closureAmount,
-                durationMonths,
-                mrr: isClosed && closureAmount && durationMonths ? closureAmount / durationMonths : 0,
+                closureDurationMonths,
+                mrr: isClosed && closureAmount && closureDurationMonths ? closureAmount / closureDurationMonths : 0,
                 revenue: amountPitched || closureAmount,
             };
         }
@@ -953,6 +972,87 @@
             return months[0] || '';
         }
 
+        function getYearMonth(dateValue) {
+            const text = normalizeText(dateValue);
+            if (!text || text.length < 7) return '';
+            return text.slice(0, 7);
+        }
+
+        function formatYearMonth(yearMonth) {
+            if (!yearMonth || yearMonth.length < 7) return yearMonth;
+            const [year, month] = yearMonth.split('-');
+            const monthIndex = Number(month) - 1;
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return `${monthNames[monthIndex] || month}-${year}`;
+        }
+
+        function setSelectOptions(select, options, defaultLabel) {
+            if (!select) return;
+            const previousValue = select.value;
+            select.innerHTML = `<option value="">${defaultLabel}</option>` + options.map(option => `<option value="${option}">${formatYearMonth(option)}</option>`).join('');
+            if (previousValue && options.includes(previousValue)) {
+                select.value = previousValue;
+            }
+        }
+
+        function injectDualDateFilters() {
+            const tabs = ['active-month', 'revenue-view', 'am-breakdown', 'team-breakdown', 'mom-tracker', 'funnel-view'];
+
+            tabs.forEach(tabName => {
+                const suffix = getFilterSuffix(tabName);
+                const panel = document.querySelector(`#${tabName} .filters-panel`);
+                if (!panel || panel.querySelector(`[data-dual-filters="${suffix}"]`)) return;
+
+                const actionsGroup = panel.querySelector('.filter-group:last-child');
+                const wrapper = document.createElement('div');
+                wrapper.setAttribute('data-dual-filters', suffix);
+                wrapper.style.display = 'contents';
+                wrapper.innerHTML = `
+                    <div class="filter-group">
+                        <label class="filter-label">Onboarding Month</label>
+                        <select id="onboarding-month-filter-${suffix}" onchange="applyFilters('${tabName}')">
+                            <option value="">All Onboarding Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Closure Month</label>
+                        <select id="closure-month-filter-${suffix}" onchange="applyFilters('${tabName}')">
+                            <option value="">All Closure Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Onboarding Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="onboarding-date-from-${suffix}" onchange="applyFilters('${tabName}')">
+                            <input type="date" id="onboarding-date-to-${suffix}" onchange="applyFilters('${tabName}')">
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Closure Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="closure-date-from-${suffix}" onchange="applyFilters('${tabName}')">
+                            <input type="date" id="closure-date-to-${suffix}" onchange="applyFilters('${tabName}')">
+                        </div>
+                    </div>
+                `;
+
+                if (actionsGroup) panel.insertBefore(wrapper, actionsGroup);
+                else panel.appendChild(wrapper);
+            });
+        }
+
+        function populateDateBasedMonthFilters() {
+            const allRows = Object.values(rawData).flat();
+            const onboardingMonths = [...new Set(allRows.map(row => getYearMonth(row.onboardingDate || row.date)).filter(Boolean))].sort();
+            const closureMonths = [...new Set(allRows.map(row => getYearMonth(row.closureDate)).filter(Boolean))].sort();
+            const suffixes = ['active', 'revenue', 'am', 'team', 'mom', 'funnel'];
+
+            suffixes.forEach(suffix => {
+                setSelectOptions(document.getElementById(`onboarding-month-filter-${suffix}`), onboardingMonths, 'All Onboarding Months');
+                setSelectOptions(document.getElementById(`closure-month-filter-${suffix}`), closureMonths, 'All Closure Months');
+            });
+        }
+
         function populateMonthFilters() {
             const months = getAvailableMonths();
             const monthFilterIds = ['month-filter-active', 'month-filter-revenue', 'month-filter-am', 'month-filter-team', 'month-filter-funnel'];
@@ -969,6 +1069,8 @@
                     select.value = nextValue;
                 }
             });
+
+            populateDateBasedMonthFilters();
         }
 
         function getSelectedMonthKey(tabName) {
@@ -1044,31 +1146,46 @@
 
         // Apply filters
         function applyFilters(tabName) {
-            const amFilter = document.getElementById(`am-filter-${getFilterSuffix(tabName)}`)?.value || '';
-            const teamFilter = document.getElementById(`team-filter-${getFilterSuffix(tabName)}`)?.value || '';
-            const programFilter = document.getElementById(`program-filter-${getFilterSuffix(tabName)}`)?.value || '';
-            const monthFilter = document.getElementById(`month-filter-${getFilterSuffix(tabName)}`)?.value || '';
-            const dateFrom = document.getElementById(`date-from-${getFilterSuffix(tabName)}`)?.value || '';
-            const dateTo = document.getElementById(`date-to-${getFilterSuffix(tabName)}`)?.value || '';
+            const suffix = getFilterSuffix(tabName);
+            const amFilter = document.getElementById(`am-filter-${suffix}`)?.value || '';
+            const teamFilter = document.getElementById(`team-filter-${suffix}`)?.value || '';
+            const programFilter = document.getElementById(`program-filter-${suffix}`)?.value || '';
+            const monthFilter = document.getElementById(`month-filter-${suffix}`)?.value || '';
+            const dateFrom = document.getElementById(`date-from-${suffix}`)?.value || '';
+            const dateTo = document.getElementById(`date-to-${suffix}`)?.value || '';
+            const onboardingMonthFilter = document.getElementById(`onboarding-month-filter-${suffix}`)?.value || '';
+            const closureMonthFilter = document.getElementById(`closure-month-filter-${suffix}`)?.value || '';
+            const onboardingDateFrom = document.getElementById(`onboarding-date-from-${suffix}`)?.value || '';
+            const onboardingDateTo = document.getElementById(`onboarding-date-to-${suffix}`)?.value || '';
+            const closureDateFrom = document.getElementById(`closure-date-from-${suffix}`)?.value || '';
+            const closureDateTo = document.getElementById(`closure-date-to-${suffix}`)?.value || '';
 
             filteredData = JSON.parse(JSON.stringify(rawData));
 
             for (let month in filteredData) {
                 filteredData[month] = filteredData[month].filter(row => {
+                    const onboardingDate = row.onboardingDate || row.date || '';
+                    const closureDate = row.closureDate || '';
                     if (monthFilter && month !== monthFilter) return false;
                     if (amFilter && row.am !== amFilter) return false;
                     if (teamFilter && row.team !== teamFilter) return false;
                     if (programFilter && row.priority !== programFilter) return false;
-                    if (dateFrom && row.date < dateFrom) return false;
-                    if (dateTo && row.date > dateTo) return false;
+                    if (dateFrom && onboardingDate < dateFrom) return false;
+                    if (dateTo && onboardingDate > dateTo) return false;
+                    if (onboardingMonthFilter && getYearMonth(onboardingDate) !== onboardingMonthFilter) return false;
+                    if (closureMonthFilter && getYearMonth(closureDate) !== closureMonthFilter) return false;
+                    if (onboardingDateFrom && (!onboardingDate || onboardingDate < onboardingDateFrom)) return false;
+                    if (onboardingDateTo && (!onboardingDate || onboardingDate > onboardingDateTo)) return false;
+                    if (closureDateFrom && (!closureDate || closureDate < closureDateFrom)) return false;
+                    if (closureDateTo && (!closureDate || closureDate > closureDateTo)) return false;
                     return true;
                 });
             }
 
             // Show filter summary
-            const summaryText = `Active Filters: ${monthFilter ? 'Month: ' + monthFilter + ' ' : ''}${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${dateFrom ? 'From: ' + dateFrom + ' ' : ''}${dateTo ? 'To: ' + dateTo : ''}`;
-            const summaryEl = document.getElementById(`filter-summary-${getFilterSuffix(tabName)}`);
-            if (monthFilter || amFilter || teamFilter || programFilter || dateFrom || dateTo) {
+            const summaryText = `Active Filters: ${monthFilter ? 'Sheet Month: ' + monthFilter + ' ' : ''}${onboardingMonthFilter ? 'Onboarding Month: ' + formatYearMonth(onboardingMonthFilter) + ' ' : ''}${closureMonthFilter ? 'Closure Month: ' + formatYearMonth(closureMonthFilter) + ' ' : ''}${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${onboardingDateFrom ? 'Onboarding From: ' + onboardingDateFrom + ' ' : ''}${onboardingDateTo ? 'Onboarding To: ' + onboardingDateTo + ' ' : ''}${closureDateFrom ? 'Closure From: ' + closureDateFrom + ' ' : ''}${closureDateTo ? 'Closure To: ' + closureDateTo + ' ' : ''}${dateFrom ? 'Legacy From: ' + dateFrom + ' ' : ''}${dateTo ? 'Legacy To: ' + dateTo : ''}`;
+            const summaryEl = document.getElementById(`filter-summary-${suffix}`);
+            if (monthFilter || onboardingMonthFilter || closureMonthFilter || amFilter || teamFilter || programFilter || onboardingDateFrom || onboardingDateTo || closureDateFrom || closureDateTo || dateFrom || dateTo) {
                 summaryEl.textContent = summaryText;
                 summaryEl.style.display = 'block';
             } else {
@@ -1078,6 +1195,7 @@
             // Re-render current tab
             const currentTab = document.querySelector('.tab-content.active').id;
             if (currentTab === 'active-month') renderActiveMonth();
+            else if (currentTab === 'revenue-view') renderRevenueView();
             else if (currentTab === 'am-breakdown') renderAMBreakdown();
             else if (currentTab === 'team-breakdown') renderTeamBreakdown();
             else if (currentTab === 'mom-tracker') renderMOM();
@@ -1088,11 +1206,21 @@
             const suffix = getFilterSuffix(tabName);
             const monthSelect = document.getElementById(`month-filter-${suffix}`);
             if (monthSelect) monthSelect.value = '';
-            document.getElementById(`am-filter-${suffix}`).value = '';
-            document.getElementById(`team-filter-${suffix}`).value = '';
-            document.getElementById(`program-filter-${suffix}`).value = '';
-            document.getElementById(`date-from-${suffix}`).value = '';
-            document.getElementById(`date-to-${suffix}`).value = '';
+            const resetId = (id) => {
+                const element = document.getElementById(id);
+                if (element) element.value = '';
+            };
+            resetId(`am-filter-${suffix}`);
+            resetId(`team-filter-${suffix}`);
+            resetId(`program-filter-${suffix}`);
+            resetId(`date-from-${suffix}`);
+            resetId(`date-to-${suffix}`);
+            resetId(`onboarding-month-filter-${suffix}`);
+            resetId(`closure-month-filter-${suffix}`);
+            resetId(`onboarding-date-from-${suffix}`);
+            resetId(`onboarding-date-to-${suffix}`);
+            resetId(`closure-date-from-${suffix}`);
+            resetId(`closure-date-to-${suffix}`);
             
             filteredData = JSON.parse(JSON.stringify(rawData));
             document.getElementById(`filter-summary-${suffix}`).style.display = 'none';
@@ -1653,6 +1781,7 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
+            injectDualDateFilters();
             populateMonthFilters();
             renderActiveMonth();
             document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Loading Google Sheets data...';
