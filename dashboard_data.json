@@ -1,0 +1,95 @@
+{
+  "funnel": {
+    "JAN": {
+      "total_sellers": 649,
+      "connected": 0,
+      "demo_completed": 0,
+      "intent": 0,
+      "payment_link_sent": 0,
+      "closures": 0,
+      "amount_pitched": 0.0,
+      "closure_amount": 0.0
+    },
+    "APRIL": {
+      "total_sellers": 143,
+      "connected": 143,
+      "demo_completed": 143,
+      "intent": 66,
+      "payment_link_sent": 3,
+      "closures": 2,
+      "amount_pitched": 527000.0,
+      "closure_amount": 0.0
+    },
+    "MAY": {
+      "total_sellers": 103,
+      "connected": 0,
+      "demo_completed": 0,
+      "intent": 0,
+      "payment_link_sent": 0,
+      "closures": 0,
+      "amount_pitched": 0.0,
+      "closure_amount": 0.0
+    },
+    "JUNE": {
+      "total_sellers": 97,
+      "connected": 0,
+      "demo_completed": 0,
+      "intent": 0,
+      "payment_link_sent": 0,
+      "closures": 0,
+      "amount_pitched": 0.0,
+      "closure_amount": 0.0
+    }
+  },
+  "team_performance": {
+    "JAN": {
+      "POD-Chamath": {
+        "total": 356,
+        "closures": 0,
+        "closure_rate": 0.0
+      },
+      "POD-Sanjay": {
+        "total": 293,
+        "closures": 0,
+        "closure_rate": 0.0
+      }
+    },
+    "APRIL": {
+      "POD-Chamath": {
+        "total": 93,
+        "closures": 2,
+        "closure_rate": 2.2
+      },
+      "POD-Sanjay": {
+        "total": 50,
+        "closures": 0,
+        "closure_rate": 0.0
+      }
+    },
+    "MAY": {
+      "POD-Sanjay": {
+        "total": 53,
+        "closures": 0,
+        "closure_rate": 0.0
+      },
+      "POD-Chamath": {
+        "total": 50,
+        "closures": 0,
+        "closure_rate": 0.0
+      }
+    },
+    "JUNE": {
+      "POD-Sanjay": {
+        "total": 59,
+        "closures": 0,
+        "closure_rate": 0.0
+      },
+      "POD-Chamath": {
+        "total": 38,
+        "closures": 0,
+        "closure_rate": 0.0
+      }
+    }
+  },
+  "last_updated": "2026-05-07 08:24:56"
+}

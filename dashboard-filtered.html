@@ -907,6 +907,7 @@
             const amountPitched = toNumberValue(row['Amount Pitched']);
             const closureAmount = toNumberValue(row['Closure Amount']);
             const durationMonths = parseDurationMonths(row['Duration Pitched']);
+            const isClosed = toBooleanMetric(row['Closure']);
 
             return {
                 am: normalizeText(row['AM']),
@@ -917,11 +918,11 @@
                 demo: toBooleanMetric(row['Tool Demo Completed']),
                 intent: toBooleanMetric(row['Intent']),
                 payment: toBooleanMetric(row['Payment Link Sent']),
-                closed: toBooleanMetric(row['Closure']),
+                closed: isClosed,
                 amountPitched,
                 closureAmount,
                 durationMonths,
-                mrr: amountPitched && durationMonths ? amountPitched / durationMonths : 0,
+                mrr: isClosed && closureAmount && durationMonths ? closureAmount / durationMonths : 0,
                 revenue: amountPitched || closureAmount,
             };
         }

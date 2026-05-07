@@ -1,0 +1,134 @@
+{
+  "am_stats": [
+    {
+      "am": "Chamanth",
+      "total": 12,
+      "connected": 12,
+      "demo": 12,
+      "intent": 8,
+      "payment_link": 1,
+      "closures": 1,
+      "amount_pitched": 145000.0
+    },
+    {
+      "am": "Saikumar",
+      "total": 39,
+      "connected": 39,
+      "demo": 39,
+      "intent": 28,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 273500.0
+    },
+    {
+      "am": "Sanjay",
+      "total": 11,
+      "connected": 11,
+      "demo": 11,
+      "intent": 5,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 0.0
+    },
+    {
+      "am": "Sarthak",
+      "total": 37,
+      "connected": 37,
+      "demo": 37,
+      "intent": 18,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 58500.0
+    },
+    {
+      "am": "Ved",
+      "total": 44,
+      "connected": 44,
+      "demo": 44,
+      "intent": 7,
+      "payment_link": 2,
+      "closures": 1,
+      "amount_pitched": 50000.0
+    }
+  ],
+  "team_stats": [
+    {
+      "team": "POD-Chamath",
+      "total": 93,
+      "connected": 93,
+      "demo": 93,
+      "intent": 33,
+      "payment_link": 3,
+      "closures": 2,
+      "amount_pitched": 253500.0
+    },
+    {
+      "team": "POD-Sanjay",
+      "total": 50,
+      "connected": 50,
+      "demo": 50,
+      "intent": 33,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 273500.0
+    }
+  ],
+  "mom_data": {
+    "JAN": {
+      "total": 649,
+      "connected": 0,
+      "demo": 0,
+      "intent": 0,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 0.0,
+      "connected_rate": 0.0,
+      "demo_rate": 0.0,
+      "intent_rate": 0.0,
+      "payment_rate": 0.0,
+      "closure_rate": 0.0
+    },
+    "APRIL": {
+      "total": 143,
+      "connected": 143,
+      "demo": 143,
+      "intent": 66,
+      "payment_link": 3,
+      "closures": 2,
+      "amount_pitched": 527000.0,
+      "connected_rate": 100.0,
+      "demo_rate": 100.0,
+      "intent_rate": 46.2,
+      "payment_rate": 2.1,
+      "closure_rate": 1.4
+    },
+    "MAY": {
+      "total": 103,
+      "connected": 0,
+      "demo": 0,
+      "intent": 0,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 0.0,
+      "connected_rate": 0.0,
+      "demo_rate": 0.0,
+      "intent_rate": 0.0,
+      "payment_rate": 0.0,
+      "closure_rate": 0.0
+    },
+    "JUNE": {
+      "total": 97,
+      "connected": 0,
+      "demo": 0,
+      "intent": 0,
+      "payment_link": 0,
+      "closures": 0,
+      "amount_pitched": 0.0,
+      "connected_rate": 0.0,
+      "demo_rate": 0.0,
+      "intent_rate": 0.0,
+      "payment_rate": 0.0,
+      "closure_rate": 0.0
+    }
+  }
+}

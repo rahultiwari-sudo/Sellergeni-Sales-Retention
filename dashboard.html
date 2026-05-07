@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevate Retention Dashboard - Q1/Q2 2026</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #667eea;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .kpi-card.alert {
+            border-left-color: #f59e0b;
+        }
+
+        .kpi-card.success {
+            border-left-color: #10b981;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .kpi-card.alert .kpi-value {
+            color: #f59e0b;
+        }
+
+        .kpi-card.success .kpi-value {
+            color: #10b981;
+        }
+
+        .kpi-subtext {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .funnel-container {
+            grid-column: 1 / -1;
+        }
+
+        .funnel-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .funnel-stage {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .funnel-stage::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .funnel-stage:hover::before {
+            opacity: 1;
+        }
+
+        .funnel-stage.low {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .funnel-stage.medium {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .funnel-stage.high {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        }
+
+        .funnel-stage-name {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .funnel-stage-value {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .funnel-stage-rate {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .stats-table th {
+            background: #f9fafb;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .stats-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .month-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .month-btn {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .month-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .month-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .metric-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric-item {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .kpi-value {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Elevate Retention Dashboard</h1>
+            <p>Comprehensive Seller Retention & Revenue Tracker - Q1/Q2 2026</p>
+        </div>
+
+        <div class="kpi-grid" id="kpiGrid"></div>
+
+        <div class="charts-grid">
+            <!-- Funnel Overview -->
+            <div class="chart-card funnel-container">
+                <h3>🎯 Sales Funnel Overview (April)</h3>
+                <div id="funnelStages"></div>
+            </div>
+
+            <!-- Month-on-Month Comparison -->
+            <div class="chart-card">
+                <h3>📈 Month-on-Month Sellers</h3>
+                <div class="chart-container">
+                    <canvas id="momChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Conversion Rates -->
+            <div class="chart-card">
+                <h3>📊 Conversion Funnel Rates</h3>
+                <div class="chart-container">
+                    <canvas id="conversionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Revenue Metrics -->
+            <div class="chart-card">
+                <h3>💰 Revenue Metrics</h3>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Funnel Stages Breakdown -->
+            <div class="chart-card">
+                <h3>🔄 Funnel Stage Distribution (April)</h3>
+                <div class="chart-container">
+                    <canvas id="funnelDistributionChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Performance by Team -->
+            <div class="chart-card">
+                <h3>👥 Performance by Team</h3>
+                <div class="chart-container">
+                    <canvas id="teamChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Stats Table -->
+        <div class="chart-card">
+            <h3>📋 Detailed Monthly Breakdown</h3>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Total Sellers</th>
+                        <th>Connected</th>
+                        <th>Demo Completed</th>
+                        <th>Intent</th>
+                        <th>Payment Link</th>
+                        <th>Closures</th>
+                        <th>Closure Rate</th>
+                        <th>Amount Pitched</th>
+                        <th>Closure Revenue</th>
+                    </tr>
+                </thead>
+                <tbody id="statsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Last Updated: <span id="lastUpdated"></span> | Data Source: Google Sheets Integration</p>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const data = {
+            "JAN": {
+                "total_sellers": 649,
+                "connected": 0,
+                "demo_completed": 0,
+                "intent": 0,
+                "payment_link_sent": 0,
+                "closures": 0,
+                "amount_pitched": 0.0,
+                "closure_amount": 0.0
+            },
+            "APRIL": {
+                "total_sellers": 143,
+                "connected": 143,
+                "demo_completed": 143,
+                "intent": 66,
+                "payment_link_sent": 3,
+                "closures": 2,
+                "amount_pitched": 527000.0,
+                "closure_amount": 0.0
+            },
+            "MAY": {
+                "total_sellers": 103,
+                "connected": 0,
+                "demo_completed": 0,
+                "intent": 0,
+                "payment_link_sent": 0,
+                "closures": 0,
+                "amount_pitched": 0.0,
+                "closure_amount": 0.0
+            },
+            "JUNE": {
+                "total_sellers": 97,
+                "connected": 0,
+                "demo_completed": 0,
+                "intent": 0,
+                "payment_link_sent": 0,
+                "closures": 0,
+                "amount_pitched": 0.0,
+                "closure_amount": 0.0
+            }
+        };
+
+        // Helper functions
+        function formatCurrency(value) {
+            return '₹' + new Intl.NumberFormat('en-IN').format(Math.round(value));
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('en-IN').format(Math.round(value));
+        }
+
+        function calculateRate(numerator, denominator) {
+            return denominator > 0 ? ((numerator / denominator) * 100).toFixed(1) : 0;
+        }
+
+        // KPI Cards
+        function renderKPIs() {
+            const totalSellers = Object.values(data).reduce((sum, m) => sum + m.total_sellers, 0);
+            const totalConnected = Object.values(data).reduce((sum, m) => sum + m.connected, 0);
+            const totalDemos = Object.values(data).reduce((sum, m) => sum + m.demo_completed, 0);
+            const totalClosures = Object.values(data).reduce((sum, m) => sum + m.closures, 0);
+            const totalRevenue = Object.values(data).reduce((sum, m) => sum + m.amount_pitched, 0);
+            const overallRate = calculateRate(totalConnected, totalSellers);
+
+            const kpis = [
+                { label: 'Total Sellers', value: formatNumber(totalSellers), subtext: 'Jan-Jun 2026', class: '' },
+                { label: 'Connected Rate', value: overallRate + '%', subtext: 'Overall engagement', class: overallRate > 30 ? 'success' : 'alert' },
+                { label: 'Total Closures', value: formatNumber(totalClosures), subtext: overallRate > 0 ? 'Closure rate: ' + calculateRate(totalClosures, totalConnected) + '%' : 'No closures yet', class: totalClosures > 0 ? 'success' : 'alert' },
+                { label: 'Revenue Pitched', value: formatCurrency(totalRevenue), subtext: 'April: ₹527K', class: 'success' },
+            ];
+
+            const kpiGrid = document.getElementById('kpiGrid');
+            kpiGrid.innerHTML = kpis.map(kpi => `
+                <div class="kpi-card ${kpi.class}">
+                    <div class="kpi-label">${kpi.label}</div>
+                    <div class="kpi-value">${kpi.value}</div>
+                    <div class="kpi-subtext">${kpi.subtext}</div>
+                </div>
+            `).join('');
+        }
+
+        // Funnel Stages
+        function renderFunnelStages() {
+            const monthData = data.APRIL;
+            const stages = [
+                { name: 'Total Sellers', value: monthData.total_sellers, rate: '100%', class: 'high' },
+                { name: 'Connected', value: monthData.connected, rate: calculateRate(monthData.connected, monthData.total_sellers) + '%', class: monthData.connected / monthData.total_sellers > 0.8 ? 'high' : 'medium' },
+                { name: 'Demo Completed', value: monthData.demo_completed, rate: calculateRate(monthData.demo_completed, monthData.total_sellers) + '%', class: 'high' },
+                { name: 'Intent Shown', value: monthData.intent, rate: calculateRate(monthData.intent, monthData.total_sellers) + '%', class: 'medium' },
+                { name: 'Payment Link', value: monthData.payment_link_sent, rate: calculateRate(monthData.payment_link_sent, monthData.total_sellers) + '%', class: 'low' },
+                { name: 'Closed', value: monthData.closures, rate: calculateRate(monthData.closures, monthData.total_sellers) + '%', class: 'low' },
+            ];
+
+            const funnelContainer = document.getElementById('funnelStages');
+            funnelContainer.innerHTML = '<div class="funnel-section">' + stages.map(stage => `
+                <div class="funnel-stage ${stage.class}">
+                    <div class="funnel-stage-name">${stage.name}</div>
+                    <div class="funnel-stage-value">${formatNumber(stage.value)}</div>
+                    <div class="funnel-stage-rate">Conversion: ${stage.rate}</div>
+                </div>
+            `).join('') + '</div>';
+        }
+
+        // Charts
+        function initCharts() {
+            Chart.register(ChartDataLabels);
+
+            // Month-on-Month Chart
+            const momCtx = document.getElementById('momChart').getContext('2d');
+            new Chart(momCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['January', 'April', 'May', 'June'],
+                    datasets: [{
+                        label: 'Total Sellers',
+                        data: [data.JAN.total_sellers, data.APRIL.total_sellers, data.MAY.total_sellers, data.JUNE.total_sellers],
+                        backgroundColor: ['#667eea', '#10b981', '#f59e0b', '#ef4444'],
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { anchor: 'end', align: 'top', font: { weight: 'bold' } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => formatNumber(v) } }
+                    }
+                }
+            });
+
+            // Conversion Funnel Rates
+            const conversionCtx = document.getElementById('conversionChart').getContext('2d');
+            new Chart(conversionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Total', 'Connected', 'Demo', 'Intent', 'Payment', 'Closure'],
+                    datasets: [{
+                        label: 'April - Conversion %',
+                        data: [
+                            100,
+                            parseFloat(calculateRate(data.APRIL.connected, data.APRIL.total_sellers)),
+                            parseFloat(calculateRate(data.APRIL.demo_completed, data.APRIL.total_sellers)),
+                            parseFloat(calculateRate(data.APRIL.intent, data.APRIL.total_sellers)),
+                            parseFloat(calculateRate(data.APRIL.payment_link_sent, data.APRIL.total_sellers)),
+                            parseFloat(calculateRate(data.APRIL.closures, data.APRIL.total_sellers))
+                        ],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: true },
+                        datalabels: { anchor: 'end', align: 'top', offset: 10, font: { size: 11, weight: 'bold' }, formatter: (v) => { return typeof v === 'number' ? v.toFixed(1) + '%' : v + '%'; } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+                    }
+                }
+            });
+
+            // Revenue Metrics
+            const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+            new Chart(revenueCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['April Pitched', 'Jan-Jun Total'],
+                    datasets: [{
+                        data: [data.APRIL.amount_pitched, 527000],
+                        backgroundColor: ['#10b981', '#667eea'],
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        datalabels: { formatter: (v, ctx) => formatCurrency(v), font: { weight: 'bold', size: 12 } }
+                    }
+                }
+            });
+
+            // Funnel Distribution
+            const funnelDistCtx = document.getElementById('funnelDistributionChart').getContext('2d');
+            new Chart(funnelDistCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Sellers', 'Connected', 'Demo', 'Intent', 'Link', 'Closed'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [
+                            data.APRIL.total_sellers,
+                            data.APRIL.connected,
+                            data.APRIL.demo_completed,
+                            data.APRIL.intent,
+                            data.APRIL.payment_link_sent,
+                            data.APRIL.closures
+                        ],
+                        backgroundColor: '#667eea',
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { anchor: 'end', align: 'right', font: { weight: 'bold' }, formatter: (v) => { return typeof v === 'number' ? formatNumber(v) : v; } }
+                    },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { callback: v => formatNumber(v) } }
+                    }
+                }
+            });
+
+            // Team Performance
+            const teamCtx = document.getElementById('teamChart').getContext('2d');
+            new Chart(teamCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Total Sellers', 'Connected %', 'Demo %', 'Intent %', 'Payment %', 'Closure %'],
+                    datasets: [{
+                        label: 'April Performance',
+                        data: [
+                            Math.min(data.APRIL.total_sellers, 100),
+                            calculateRate(data.APRIL.connected, data.APRIL.total_sellers),
+                            calculateRate(data.APRIL.demo_completed, data.APRIL.total_sellers),
+                            calculateRate(data.APRIL.intent, data.APRIL.total_sellers),
+                            calculateRate(data.APRIL.payment_link_sent, data.APRIL.total_sellers),
+                            calculateRate(data.APRIL.closures, data.APRIL.total_sellers)
+                        ],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        r: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } }
+                    }
+                }
+            });
+        }
+
+        // Stats Table
+        function renderStatsTable() {
+            const months = ['JAN', 'APRIL', 'MAY', 'JUNE'];
+            const tbody = document.getElementById('statsTableBody');
+            
+            tbody.innerHTML = months.map(month => {
+                const m = data[month];
+                const closureRate = calculateRate(m.closures, m.total_sellers);
+                return `
+                    <tr>
+                        <td><strong>${month}</strong></td>
+                        <td>${formatNumber(m.total_sellers)}</td>
+                        <td>${formatNumber(m.connected)}</td>
+                        <td>${formatNumber(m.demo_completed)}</td>
+                        <td>${formatNumber(m.intent)}</td>
+                        <td>${formatNumber(m.payment_link_sent)}</td>
+                        <td>${formatNumber(m.closures)}</td>
+                        <td>${closureRate}%</td>
+                        <td>${formatCurrency(m.amount_pitched)}</td>
+                        <td>${formatCurrency(m.closure_amount)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderKPIs();
+            renderFunnelStages();
+            renderStatsTable();
+            initCharts();
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN');
+        });
+    </script>
+</body>
+</html>

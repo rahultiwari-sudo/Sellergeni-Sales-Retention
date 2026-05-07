@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevate Retention Dashboard - Enhanced</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        /* Tab Navigation */
+        .tab-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .tab-navigation {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            background: #f9fafb;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 16px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-btn:hover {
+            background: #f0f0f0;
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            animation: fadeIn 0.3s;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .kpi-card.alert {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .kpi-card.success {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        }
+
+        .kpi-card.warning {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .kpi-subtext {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        /* Tables */
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .stats-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stats-table td {
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .stats-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .stats-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Funnel */
+        .funnel-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .funnel-stage {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            color: white;
+            text-align: center;
+        }
+
+        .funnel-stage.low {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .funnel-stage.medium {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .funnel-stage.high {
+            background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+        }
+
+        .funnel-stage-name {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .funnel-stage-value {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .funnel-stage-rate {
+            font-size: 11px;
+            opacity: 0.8;
+        }
+
+        /* Comparison Cards */
+        .comparison-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: grid;
+            grid-template-columns: 1fr auto auto auto;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .comparison-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .comparison-stat {
+            text-align: center;
+        }
+
+        .comparison-stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .comparison-stat-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            padding: 20px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tab-navigation {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                flex: 1;
+                min-width: 100px;
+                padding: 12px 16px;
+                font-size: 12px;
+            }
+
+            .comparison-card {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Elevate Retention Dashboard</h1>
+            <p>Advanced Seller Retention, Revenue & Team Performance Tracker</p>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="switchTab('active-month')">📅 Active Month (April)</button>
+                <button class="tab-btn" onclick="switchTab('am-breakdown')">👤 AM Breakdown</button>
+                <button class="tab-btn" onclick="switchTab('team-breakdown')">👥 Team Breakdown</button>
+                <button class="tab-btn" onclick="switchTab('mom-tracker')">📈 Month-on-Month</button>
+            </div>
+
+            <!-- Active Month Tab -->
+            <div id="active-month" class="tab-content active">
+                <div class="kpi-grid" id="activeMonthKPIs"></div>
+                <div class="chart-card">
+                    <h3>🎯 April Conversion Funnel</h3>
+                    <div id="aprilFunnelStages"></div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>📊 Funnel Conversion Rates</h3>
+                        <div class="chart-container">
+                            <canvas id="conversionChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>💰 Revenue by Stage</h3>
+                        <div class="chart-container">
+                            <canvas id="revenueStageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>🔄 Funnel Drop-off Analysis</h3>
+                    <div class="chart-container">
+                        <canvas id="dropoffChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AM Breakdown Tab -->
+            <div id="am-breakdown" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #333;">Account Manager Performance - April</h2>
+                <div class="chart-card">
+                    <h3>AM Comparison</h3>
+                    <div class="chart-container">
+                        <canvas id="amComparisonChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 AM Detailed Metrics</h3>
+                    <table class="stats-table" id="amTable"></table>
+                </div>
+            </div>
+
+            <!-- Team Breakdown Tab -->
+            <div id="team-breakdown" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #333;">Team Performance - April</h2>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Team Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="teamComparisonChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Team Revenue Split</h3>
+                        <div class="chart-container">
+                            <canvas id="teamRevenueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 Team Detailed Metrics</h3>
+                    <table class="stats-table" id="teamTable"></table>
+                </div>
+            </div>
+
+            <!-- Month-on-Month Tab -->
+            <div id="mom-tracker" class="tab-content">
+                <h2 style="margin-bottom: 20px; color: #333;">Month-on-Month Performance Tracker</h2>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Sellers by Month</h3>
+                        <div class="chart-container">
+                            <canvas id="momSellersChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Conversion Rates Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="momConversionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h3>Revenue Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="momRevenueChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Closure Rate Trend</h3>
+                        <div class="chart-container">
+                            <canvas id="momClosureChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>📋 Monthly Summary</h3>
+                    <table class="stats-table" id="momTable"></table>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Last Updated: <span id="lastUpdated"></span> | Advanced Analytics Dashboard v2.0</p>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const amStats = [
+            {"am": "Chamanth", "total": 12, "connected": 12, "demo": 12, "intent": 8, "payment_link": 1, "closures": 1, "amount_pitched": 145000},
+            {"am": "Saikumar", "total": 39, "connected": 39, "demo": 39, "intent": 28, "payment_link": 0, "closures": 0, "amount_pitched": 273500},
+            {"am": "Sanjay", "total": 11, "connected": 11, "demo": 11, "intent": 5, "payment_link": 0, "closures": 0, "amount_pitched": 0},
+            {"am": "Sarthak", "total": 37, "connected": 37, "demo": 37, "intent": 18, "payment_link": 0, "closures": 0, "amount_pitched": 58500},
+            {"am": "Ved", "total": 44, "connected": 44, "demo": 44, "intent": 7, "payment_link": 1, "closures": 1, "amount_pitched": 50000}
+        ];
+
+        const teamStats = [
+            {"team": "POD-Chamath", "total": 93, "connected": 93, "demo": 93, "intent": 33, "payment_link": 1, "closures": 2, "amount_pitched": 253500},
+            {"team": "POD-Sanjay", "total": 50, "connected": 50, "demo": 50, "intent": 33, "payment_link": 2, "closures": 0, "amount_pitched": 273500}
+        ];
+
+        const momData = {
+            "JAN": {"total": 649, "connected": 0, "demo": 0, "intent": 0, "payment_link": 0, "closures": 0, "amount_pitched": 0, "connected_rate": 0, "demo_rate": 0, "intent_rate": 0, "payment_rate": 0, "closure_rate": 0},
+            "APRIL": {"total": 143, "connected": 143, "demo": 143, "intent": 66, "payment_link": 3, "closures": 2, "amount_pitched": 527000, "connected_rate": 100, "demo_rate": 100, "intent_rate": 46.2, "payment_rate": 2.1, "closure_rate": 1.4},
+            "MAY": {"total": 103, "connected": 0, "demo": 0, "intent": 0, "payment_link": 0, "closures": 0, "amount_pitched": 0, "connected_rate": 0, "demo_rate": 0, "intent_rate": 0, "payment_rate": 0, "closure_rate": 0},
+            "JUNE": {"total": 97, "connected": 0, "demo": 0, "intent": 0, "payment_link": 0, "closures": 0, "amount_pitched": 0, "connected_rate": 0, "demo_rate": 0, "intent_rate": 0, "payment_rate": 0, "closure_rate": 0}
+        };
+
+        // Helper functions
+        function formatCurrency(value) {
+            return '₹' + new Intl.NumberFormat('en-IN').format(Math.round(value));
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('en-IN').format(Math.round(value));
+        }
+
+        function calculateRate(num, denom) {
+            return denom > 0 ? ((num / denom) * 100).toFixed(1) : 0;
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show active tab and button
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Initialize charts for the tab
+            setTimeout(() => {
+                if (tabName === 'active-month') {
+                    initActiveMonthCharts();
+                } else if (tabName === 'am-breakdown') {
+                    initAMCharts();
+                } else if (tabName === 'team-breakdown') {
+                    initTeamCharts();
+                } else if (tabName === 'mom-tracker') {
+                    initMOMCharts();
+                }
+            }, 100);
+        }
+
+        // Render Active Month KPIs
+        function renderActiveMonthKPIs() {
+            const april = momData.APRIL;
+            const kpis = [
+                { label: 'Total Sellers', value: formatNumber(april.total), subtext: 'Active prospects', class: 'success' },
+                { label: 'Connected Rate', value: april.connected_rate + '%', subtext: '143 out of 143', class: 'success' },
+                { label: 'Demo Completion', value: april.demo_rate + '%', subtext: '143 demos completed', class: 'success' },
+                { label: 'Intent Generated', value: april.intent_rate + '%', subtext: '66 sellers showing intent', class: 'warning' },
+                { label: 'Payment Links', value: april.payment_rate + '%', subtext: '3 links sent', class: 'alert' },
+                { label: 'Closures', value: april.closures, subtext: 'Revenue: ' + formatCurrency(april.amount_pitched), class: 'alert' },
+            ];
+
+            const kpiGrid = document.getElementById('activeMonthKPIs');
+            kpiGrid.innerHTML = kpis.map(kpi => `
+                <div class="kpi-card ${kpi.class}">
+                    <div class="kpi-label">${kpi.label}</div>
+                    <div class="kpi-value">${kpi.value}</div>
+                    <div class="kpi-subtext">${kpi.subtext}</div>
+                </div>
+            `).join('');
+        }
+
+        // Render April Funnel
+        function renderAprilFunnel() {
+            const april = momData.APRIL;
+            const stages = [
+                { name: 'Total', value: april.total, rate: '100%', class: 'high' },
+                { name: 'Connected', value: april.connected, rate: '100%', class: 'high' },
+                { name: 'Demo', value: april.demo, rate: '100%', class: 'high' },
+                { name: 'Intent', value: april.intent, rate: (april.intent/april.total*100).toFixed(1) + '%', class: 'medium' },
+                { name: 'Payment', value: april.payment_link, rate: (april.payment_link/april.total*100).toFixed(1) + '%', class: 'low' },
+                { name: 'Closed', value: april.closures, rate: (april.closures/april.total*100).toFixed(1) + '%', class: 'low' },
+            ];
+
+            const funnelDiv = document.getElementById('aprilFunnelStages');
+            funnelDiv.innerHTML = '<div class="funnel-section">' + stages.map(s => `
+                <div class="funnel-stage ${s.class}">
+                    <div class="funnel-stage-name">${s.name}</div>
+                    <div class="funnel-stage-value">${formatNumber(s.value)}</div>
+                    <div class="funnel-stage-rate">${s.rate}</div>
+                </div>
+            `).join('') + '</div>';
+        }
+
+        // Render AM Table
+        function renderAMTable() {
+            const tbody = document.getElementById('amTable');
+            tbody.innerHTML = `
+                <tr>
+                    <th>Account Manager</th>
+                    <th>Total Sellers</th>
+                    <th>Connected</th>
+                    <th>Demo %</th>
+                    <th>Intent %</th>
+                    <th>Payment Link %</th>
+                    <th>Closures</th>
+                    <th>Amount Pitched</th>
+                </tr>
+                ${amStats.map(am => `
+                    <tr>
+                        <td><strong>${am.am}</strong></td>
+                        <td>${am.total}</td>
+                        <td>${am.connected}</td>
+                        <td>${calculateRate(am.demo, am.total)}%</td>
+                        <td>${calculateRate(am.intent, am.total)}%</td>
+                        <td>${calculateRate(am.payment_link, am.total)}%</td>
+                        <td>${am.closures}</td>
+                        <td>${formatCurrency(am.amount_pitched)}</td>
+                    </tr>
+                `).join('')}
+            `;
+        }
+
+        // Render Team Table
+        function renderTeamTable() {
+            const tbody = document.getElementById('teamTable');
+            tbody.innerHTML = `
+                <tr>
+                    <th>Team</th>
+                    <th>Total Sellers</th>
+                    <th>Connected</th>
+                    <th>Demo %</th>
+                    <th>Intent %</th>
+                    <th>Payment Link %</th>
+                    <th>Closures</th>
+                    <th>Amount Pitched</th>
+                </tr>
+                ${teamStats.map(team => `
+                    <tr>
+                        <td><strong>${team.team}</strong></td>
+                        <td>${team.total}</td>
+                        <td>${team.connected}</td>
+                        <td>${calculateRate(team.demo, team.total)}%</td>
+                        <td>${calculateRate(team.intent, team.total)}%</td>
+                        <td>${calculateRate(team.payment_link, team.total)}%</td>
+                        <td>${team.closures}</td>
+                        <td>${formatCurrency(team.amount_pitched)}</td>
+                    </tr>
+                `).join('')}
+            `;
+        }
+
+        // Render Month-on-Month Table
+        function renderMOMTable() {
+            const tbody = document.getElementById('momTable');
+            tbody.innerHTML = `
+                <tr>
+                    <th>Month</th>
+                    <th>Total Sellers</th>
+                    <th>Connected %</th>
+                    <th>Demo %</th>
+                    <th>Intent %</th>
+                    <th>Payment %</th>
+                    <th>Closures</th>
+                    <th>Closure Rate</th>
+                    <th>Amount Pitched</th>
+                </tr>
+                ${Object.entries(momData).map(([month, data]) => `
+                    <tr>
+                        <td><strong>${month}</strong></td>
+                        <td>${formatNumber(data.total)}</td>
+                        <td>${data.connected_rate}%</td>
+                        <td>${data.demo_rate}%</td>
+                        <td>${data.intent_rate}%</td>
+                        <td>${data.payment_rate}%</td>
+                        <td>${data.closures}</td>
+                        <td>${data.closure_rate}%</td>
+                        <td>${formatCurrency(data.amount_pitched)}</td>
+                    </tr>
+                `).join('')}
+            `;
+        }
+
+        // Active Month Charts
+        function initActiveMonthCharts() {
+            Chart.register(ChartDataLabels);
+            const april = momData.APRIL;
+
+            // Conversion Chart
+            if (document.getElementById('conversionChart')?.chart) {
+                document.getElementById('conversionChart').chart.destroy();
+            }
+            const convCtx = document.getElementById('conversionChart').getContext('2d');
+            document.getElementById('conversionChart').chart = new Chart(convCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Total', 'Connected', 'Demo', 'Intent', 'Payment', 'Closure'],
+                    datasets: [{
+                        label: 'Conversion %',
+                        data: [100, 100, 100, april.intent_rate, april.payment_rate, april.closure_rate],
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 6,
+                        pointBackgroundColor: '#667eea',
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { max: 100, ticks: { callback: v => v + '%' } } } }
+            });
+
+            // Revenue by Stage Chart
+            if (document.getElementById('revenueStageChart')?.chart) {
+                document.getElementById('revenueStageChart').chart.destroy();
+            }
+            const revCtx = document.getElementById('revenueStageChart').getContext('2d');
+            document.getElementById('revenueStageChart').chart = new Chart(revCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pitched', 'Closed'],
+                    datasets: [{
+                        label: 'Revenue (₹)',
+                        data: [april.amount_pitched, 0],
+                        backgroundColor: ['#667eea', '#f59e0b'],
+                        borderRadius: 8,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => formatCurrency(v) } } } }
+            });
+
+            // Drop-off Chart
+            if (document.getElementById('dropoffChart')?.chart) {
+                document.getElementById('dropoffChart').chart.destroy();
+            }
+            const dropCtx = document.getElementById('dropoffChart').getContext('2d');
+            document.getElementById('dropoffChart').chart = new Chart(dropCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Connected', 'Demo Dropout', 'Intent Dropout', 'Payment Dropout'],
+                    datasets: [{
+                        label: 'Drop-off Count',
+                        data: [
+                            april.connected - april.demo,
+                            april.demo - april.intent,
+                            april.intent - april.payment_link,
+                            april.payment_link - april.closures
+                        ],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                        borderRadius: 8,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // AM Charts
+        function initAMCharts() {
+            Chart.register(ChartDataLabels);
+            
+            if (document.getElementById('amComparisonChart')?.chart) {
+                document.getElementById('amComparisonChart').chart.destroy();
+            }
+            const amCtx = document.getElementById('amComparisonChart').getContext('2d');
+            document.getElementById('amComparisonChart').chart = new Chart(amCtx, {
+                type: 'bar',
+                data: {
+                    labels: amStats.map(a => a.am),
+                    datasets: [
+                        {
+                            label: 'Closures',
+                            data: amStats.map(a => a.closures),
+                            backgroundColor: '#ef4444',
+                        },
+                        {
+                            label: 'Intent',
+                            data: amStats.map(a => a.intent),
+                            backgroundColor: '#3b82f6',
+                        },
+                        {
+                            label: 'Demo',
+                            data: amStats.map(a => a.demo),
+                            backgroundColor: '#10b981',
+                        }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: false }, y: { stacked: false } } }
+            });
+        }
+
+        // Team Charts
+        function initTeamCharts() {
+            Chart.register(ChartDataLabels);
+
+            if (document.getElementById('teamComparisonChart')?.chart) {
+                document.getElementById('teamComparisonChart').chart.destroy();
+            }
+            const teamCtx = document.getElementById('teamComparisonChart').getContext('2d');
+            document.getElementById('teamComparisonChart').chart = new Chart(teamCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: teamStats.map(t => t.team),
+                    datasets: [{
+                        data: teamStats.map(t => t.total),
+                        backgroundColor: ['#667eea', '#764ba2'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            if (document.getElementById('teamRevenueChart')?.chart) {
+                document.getElementById('teamRevenueChart').chart.destroy();
+            }
+            const revCtx = document.getElementById('teamRevenueChart').getContext('2d');
+            document.getElementById('teamRevenueChart').chart = new Chart(revCtx, {
+                type: 'bar',
+                data: {
+                    labels: teamStats.map(t => t.team),
+                    datasets: [{
+                        label: 'Amount Pitched (₹)',
+                        data: teamStats.map(t => t.amount_pitched),
+                        backgroundColor: ['#667eea', '#764ba2'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // Month-on-Month Charts
+        function initMOMCharts() {
+            Chart.register(ChartDataLabels);
+
+            const months = Object.keys(momData);
+            const data = Object.values(momData);
+
+            if (document.getElementById('momSellersChart')?.chart) {
+                document.getElementById('momSellersChart').chart.destroy();
+            }
+            const momCtx = document.getElementById('momSellersChart').getContext('2d');
+            document.getElementById('momSellersChart').chart = new Chart(momCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Total Sellers',
+                        data: data.map(d => d.total),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 6,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            if (document.getElementById('momConversionChart')?.chart) {
+                document.getElementById('momConversionChart').chart.destroy();
+            }
+            const convCtx = document.getElementById('momConversionChart').getContext('2d');
+            document.getElementById('momConversionChart').chart = new Chart(convCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: 'Connected %', data: data.map(d => d.connected_rate), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)' },
+                        { label: 'Demo %', data: data.map(d => d.demo_rate), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+                        { label: 'Intent %', data: data.map(d => d.intent_rate), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)' }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { max: 100 } } }
+            });
+
+            if (document.getElementById('momRevenueChart')?.chart) {
+                document.getElementById('momRevenueChart').chart.destroy();
+            }
+            const revCtx = document.getElementById('momRevenueChart').getContext('2d');
+            document.getElementById('momRevenueChart').chart = new Chart(revCtx, {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Amount Pitched',
+                        data: data.map(d => d.amount_pitched),
+                        backgroundColor: '#667eea',
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => formatCurrency(v) } } } }
+            });
+
+            if (document.getElementById('momClosureChart')?.chart) {
+                document.getElementById('momClosureChart').chart.destroy();
+            }
+            const closeCtx = document.getElementById('momClosureChart').getContext('2d');
+            document.getElementById('momClosureChart').chart = new Chart(closeCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Closure Rate %',
+                        data: data.map(d => d.closure_rate),
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 6,
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v + '%' } } } }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderActiveMonthKPIs();
+            renderAprilFunnel();
+            renderAMTable();
+            renderTeamTable();
+            renderMOMTable();
+            initActiveMonthCharts();
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN');
+        });
+    </script>
+</body>
+</html>
