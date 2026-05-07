@@ -6,6 +6,7 @@
     <title>Elevate Retention Dashboard - Advanced Filtering</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -713,8 +714,10 @@
     </div>
 
     <script>
-        // Sample data - expanded
-        const rawData = {
+        const GOOGLE_SHEET_EXPORT_URL = 'https://docs.google.com/spreadsheets/d/1ad_HCXJ7rQ5onzBLnhlfMKvBzD1QdSVhugttVjmu8GE/export?format=xlsx';
+
+        // Sample data - used as offline fallback until the live sheet loads
+        const fallbackRawData = {
             'APRIL': [
                 {am: 'Chamanth', team: 'POD-Chamath', priority: 'P2', date: '2026-02-16', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
                 {am: 'Chamanth', team: 'POD-Chamath', priority: 'P2', date: '2026-02-17', connected: 1, demo: 1, intent: 1, payment: 0, closed: 0, revenue: 0},
@@ -727,7 +730,9 @@
             ]
         };
 
+        let rawData = JSON.parse(JSON.stringify(fallbackRawData));
         let filteredData = JSON.parse(JSON.stringify(rawData));
+        let liveSyncTimer = null;
 
         // Helper functions
         function formatCurrency(value) {
@@ -742,6 +747,105 @@
             return denom > 0 ? ((num / denom) * 100).toFixed(1) : 0;
         }
 
+        function normalizeText(value) {
+            return String(value ?? '').trim();
+        }
+
+        function toBooleanMetric(value) {
+            const normalized = normalizeText(value).toLowerCase();
+            if (!normalized) return false;
+            return !['no', 'false', '0', 'not interested', 'n/a', 'na', 'null', 'undefined', '-'].includes(normalized);
+        }
+
+        function toNumberValue(value) {
+            const numeric = Number(String(value ?? '').replace(/[^0-9.-]/g, ''));
+            return Number.isFinite(numeric) ? numeric : 0;
+        }
+
+        function normalizeDateValue(value) {
+            if (!value) return '';
+            if (value instanceof Date && !Number.isNaN(value.getTime())) {
+                return value.toISOString().slice(0, 10);
+            }
+
+            const text = normalizeText(value);
+            const parsed = new Date(text);
+            if (!Number.isNaN(parsed.getTime())) {
+                return parsed.toISOString().slice(0, 10);
+            }
+
+            return text.slice(0, 10);
+        }
+
+        function getMonthKey(sheetName) {
+            const upper = String(sheetName || '').toUpperCase();
+            if (upper.includes('JAN')) return 'JAN';
+            if (upper.includes('APRIL')) return 'APRIL';
+            if (upper.includes('MAY')) return 'MAY';
+            if (upper.includes('JUNE')) return 'JUNE';
+            return null;
+        }
+
+        function mapSheetRow(row) {
+            return {
+                am: normalizeText(row['AM']),
+                team: normalizeText(row['Team']),
+                priority: normalizeText(row['Priority']),
+                date: normalizeDateValue(row['Date of Onboarding']),
+                connected: toBooleanMetric(row['Connected for Retention']),
+                demo: toBooleanMetric(row['Tool Demo Completed']),
+                intent: toBooleanMetric(row['Intent']),
+                payment: toBooleanMetric(row['Payment Link Sent']),
+                closed: toBooleanMetric(row['Closure']),
+                revenue: toNumberValue(row['Amount Pitched']) || toNumberValue(row['Closure Amount']),
+            };
+        }
+
+        function buildDataFromWorkbook(arrayBuffer) {
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            const nextData = {};
+
+            workbook.SheetNames.forEach(sheetName => {
+                const monthKey = getMonthKey(sheetName);
+                if (!monthKey) return;
+
+                const worksheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+                nextData[monthKey] = rows.map(mapSheetRow).filter(row => row.am || row.team || row.date);
+            });
+
+            return nextData;
+        }
+
+        function renderCurrentTab() {
+            const currentTab = document.querySelector('.tab-content.active')?.id || 'active-month';
+            if (currentTab === 'active-month') renderActiveMonth();
+            else if (currentTab === 'am-breakdown') renderAMBreakdown();
+            else if (currentTab === 'team-breakdown') renderTeamBreakdown();
+            else if (currentTab === 'mom-tracker') renderMOM();
+            else if (currentTab === 'funnel-view') renderFunnelView();
+        }
+
+        async function loadGoogleSheetData() {
+            try {
+                const response = await fetch(GOOGLE_SHEET_EXPORT_URL);
+                if (!response.ok) throw new Error(`Sheet fetch failed: ${response.status}`);
+
+                const buffer = await response.arrayBuffer();
+                const nextData = buildDataFromWorkbook(buffer);
+
+                if (Object.keys(nextData).length > 0) {
+                    rawData = nextData;
+                    filteredData = JSON.parse(JSON.stringify(rawData));
+                    renderCurrentTab();
+                    document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Live Google Sheets sync';
+                }
+            } catch (error) {
+                console.error('Google Sheets sync failed:', error);
+                document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Offline fallback data';
+            }
+        }
+
         // Tab switching
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -749,20 +853,8 @@
             
             document.getElementById(tabName).classList.add('active');
             event.target.classList.add('active');
-            
-            setTimeout(() => {
-                if (tabName === 'active-month') {
-                    renderActiveMonth();
-                } else if (tabName === 'am-breakdown') {
-                    renderAMBreakdown();
-                } else if (tabName === 'team-breakdown') {
-                    renderTeamBreakdown();
-                } else if (tabName === 'mom-tracker') {
-                    renderMOM();
-                } else if (tabName === 'funnel-view') {
-                    renderFunnelView();
-                }
-            }, 100);
+
+            applyFilters(tabName);
         }
 
         // Apply filters
@@ -1215,7 +1307,9 @@
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
             renderActiveMonth();
-            document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN');
+            document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Loading Google Sheets data...';
+            loadGoogleSheetData();
+            liveSyncTimer = setInterval(loadGoogleSheetData, 300000);
         });
     </script>
 </body>
