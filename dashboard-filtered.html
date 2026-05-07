@@ -699,6 +699,18 @@
                         </select>
                     </div>
                     <div class="filter-group">
+                        <label class="filter-label">Seller</label>
+                        <select id="seller-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All Sellers</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select id="status-filter-mom" onchange="applyFilters('mom-tracker')">
+                            <option value="">All Status</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
                         <label class="filter-label">Account Manager</label>
                         <select id="am-filter-mom" onchange="applyFilters('mom-tracker')">
                             <option value="">All AMs</option>
@@ -928,23 +940,29 @@
             const closureAmount = toNumberValue(row['Closure Amount']);
             const closureDurationMonths = parseDurationMonths(getFirstNonEmptyField(row, [
                 'Closure Duration (In Months)',
+                'Closure Duration (Months)',
                 'Closure Duration',
                 'Closure Month',
                 'Closure Months',
+                'Closure Duration in Months',
                 'Duration (In Months)',
                 'Duration In Months',
             ]));
             const isClosed = toBooleanMetric(row['Closure']);
             const onboardingDate = normalizeDateValue(row['Date of Onboarding']);
             const closureDate = normalizeDateValue(row['Closure Date']);
+            const sellerName = normalizeText(getFirstNonEmptyField(row, ['Seller Name', 'Store Name', 'Seller', 'Account Name']));
+            const status = normalizeText(getFirstNonEmptyField(row, ['Status', 'status'])) || (isClosed ? 'Closed' : '');
 
             return {
+                sellerName,
                 am: normalizeText(row['AM']),
                 team: normalizeText(row['Team']),
                 priority: normalizeText(row['Priority']),
                 date: onboardingDate,
                 onboardingDate,
                 closureDate,
+                status,
                 connected: toBooleanMetric(row['Connected for Retention']),
                 demo: toBooleanMetric(row['Tool Demo Completed']),
                 intent: toBooleanMetric(row['Intent']),
@@ -991,7 +1009,7 @@
         }
 
         function formatYearMonth(yearMonth) {
-            if (!yearMonth || yearMonth.length < 7) return yearMonth;
+            if (!/^\d{4}-\d{2}$/.test(yearMonth || '')) return yearMonth;
             const [year, month] = yearMonth.split('-');
             const monthIndex = Number(month) - 1;
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -1020,6 +1038,18 @@
                 wrapper.setAttribute('data-dual-filters', suffix);
                 wrapper.style.display = 'contents';
                 wrapper.innerHTML = `
+                    <div class="filter-group">
+                        <label class="filter-label">Seller</label>
+                        <select id="seller-filter-${suffix}" onchange="applyFilters('${tabName}')">
+                            <option value="">All Sellers</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Status</label>
+                        <select id="status-filter-${suffix}" onchange="applyFilters('${tabName}')">
+                            <option value="">All Status</option>
+                        </select>
+                    </div>
                     <div class="filter-group">
                         <label class="filter-label">Onboarding Month</label>
                         <select id="onboarding-month-filter-${suffix}" onchange="applyFilters('${tabName}')">
@@ -1057,11 +1087,15 @@
             const allRows = Object.values(rawData).flat();
             const onboardingMonths = [...new Set(allRows.map(row => getYearMonth(row.onboardingDate || row.date)).filter(Boolean))].sort();
             const closureMonths = [...new Set(allRows.map(row => getYearMonth(row.closureDate)).filter(Boolean))].sort();
+            const sellers = [...new Set(allRows.map(row => normalizeText(row.sellerName)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+            const statuses = [...new Set(allRows.map(row => normalizeText(row.status)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
             const suffixes = ['active', 'revenue', 'am', 'team', 'mom', 'funnel'];
 
             suffixes.forEach(suffix => {
                 setSelectOptions(document.getElementById(`onboarding-month-filter-${suffix}`), onboardingMonths, 'All Onboarding Months');
                 setSelectOptions(document.getElementById(`closure-month-filter-${suffix}`), closureMonths, 'All Closure Months');
+                setSelectOptions(document.getElementById(`seller-filter-${suffix}`), sellers, 'All Sellers');
+                setSelectOptions(document.getElementById(`status-filter-${suffix}`), statuses, 'All Status');
             });
         }
 
@@ -1108,6 +1142,150 @@
                 pitchedRevenue: rows.reduce((sum, r) => sum + (r.amountPitched || 0), 0),
                 closureRevenue: rows.reduce((sum, r) => sum + (r.closureAmount || 0), 0),
                 mrr: rows.reduce((sum, r) => sum + (r.mrr || 0), 0),
+            };
+        }
+
+        function roundMoney(value) {
+            return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
+        }
+
+        function parseDateSafe(dateText) {
+            const text = normalizeText(dateText);
+            if (!text) return null;
+            const date = new Date(text);
+            if (Number.isNaN(date.getTime())) return null;
+            return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), 1));
+        }
+
+        function addUtcMonths(date, monthsToAdd) {
+            return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + monthsToAdd, 1));
+        }
+
+        function toUtcMonthKey(date) {
+            const y = date.getUTCFullYear();
+            const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+            return `${y}-${m}`;
+        }
+
+        function monthKeyInRange(monthKey, monthFrom, monthTo) {
+            if (monthFrom && monthKey < monthFrom) return false;
+            if (monthTo && monthKey > monthTo) return false;
+            return true;
+        }
+
+        function buildRecurringRevenueTimeline(rows, filters = {}) {
+            const {
+                monthFrom = '',
+                monthTo = '',
+                month = '',
+                seller = '',
+                status = '',
+            } = filters;
+
+            const byMonth = {};
+            const sellerFilter = normalizeText(seller).toLowerCase();
+            const statusFilter = normalizeText(status).toLowerCase();
+
+            rows.forEach((row, index) => {
+                const closureAmount = Number(row.closureAmount || 0);
+                const closureDurationMonths = Number(row.closureDurationMonths || 0);
+                const closureStart = parseDateSafe(row.closureDate);
+                if (!closureStart || closureAmount <= 0 || closureDurationMonths <= 0) return;
+
+                const normalizedSeller = normalizeText(row.sellerName).toLowerCase();
+                const normalizedStatus = normalizeText(row.status).toLowerCase();
+                if (sellerFilter && !normalizedSeller.includes(sellerFilter)) return;
+                if (statusFilter && normalizedStatus !== statusFilter) return;
+
+                const monthlyRevenue = closureAmount / closureDurationMonths;
+                const sellerKey = `${row.sellerName || 'seller'}-${index}`;
+
+                for (let offset = 0; offset < closureDurationMonths; offset++) {
+                    const activeMonthDate = addUtcMonths(closureStart, offset);
+                    const activeMonthKey = toUtcMonthKey(activeMonthDate);
+                    if (month && activeMonthKey !== month) continue;
+                    if (!monthKeyInRange(activeMonthKey, monthFrom, monthTo)) continue;
+
+                    if (!byMonth[activeMonthKey]) {
+                        byMonth[activeMonthKey] = { monthKey: activeMonthKey, mrr: 0, activeSellerSet: new Set() };
+                    }
+
+                    byMonth[activeMonthKey].mrr += monthlyRevenue;
+                    byMonth[activeMonthKey].activeSellerSet.add(sellerKey);
+                }
+            });
+
+            return Object.values(byMonth)
+                .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+                .map(entry => {
+                    const mrr = roundMoney(entry.mrr);
+                    return {
+                        monthKey: entry.monthKey,
+                        mrr,
+                        arr: roundMoney(mrr * 12),
+                        activeSellers: entry.activeSellerSet.size,
+                    };
+                });
+        }
+
+        function getCurrentRecurringMonthEntry(rows, filters = {}) {
+            const timeline = buildRecurringRevenueTimeline(rows, filters);
+            if (!timeline.length) return { monthKey: '', mrr: 0, arr: 0, activeSellers: 0 };
+            return timeline[timeline.length - 1];
+        }
+
+        function getRecurringContributionByGroup(rows, monthKey, groupKey = 'am', filters = {}) {
+            const {
+                seller = '',
+                status = '',
+            } = filters;
+            const sellerFilter = normalizeText(seller).toLowerCase();
+            const statusFilter = normalizeText(status).toLowerCase();
+            const byGroup = {};
+
+            rows.forEach((row, index) => {
+                const closureAmount = Number(row.closureAmount || 0);
+                const closureDurationMonths = Number(row.closureDurationMonths || 0);
+                const closureStart = parseDateSafe(row.closureDate);
+                if (!closureStart || closureAmount <= 0 || closureDurationMonths <= 0) return;
+
+                const normalizedSeller = normalizeText(row.sellerName).toLowerCase();
+                const normalizedStatus = normalizeText(row.status).toLowerCase();
+                if (sellerFilter && !normalizedSeller.includes(sellerFilter)) return;
+                if (statusFilter && normalizedStatus !== statusFilter) return;
+
+                const monthlyRevenue = closureAmount / closureDurationMonths;
+                const group = normalizeText(row[groupKey]) || 'Unassigned';
+                const startMonth = toUtcMonthKey(closureStart);
+                const endMonth = toUtcMonthKey(addUtcMonths(closureStart, closureDurationMonths - 1));
+                if (!monthKey || monthKey < startMonth || monthKey > endMonth) return;
+
+                if (!byGroup[group]) {
+                    byGroup[group] = { name: group, mrr: 0, activeSellerSet: new Set() };
+                }
+                byGroup[group].mrr += monthlyRevenue;
+                byGroup[group].activeSellerSet.add(`${row.sellerName || 'seller'}-${index}`);
+            });
+
+            return Object.values(byGroup)
+                .map(item => ({
+                    name: item.name,
+                    mrr: roundMoney(item.mrr),
+                    arr: roundMoney(item.mrr * 12),
+                    activeSellers: item.activeSellerSet.size,
+                }))
+                .sort((a, b) => b.mrr - a.mrr);
+        }
+
+        function getFilterValues(tabName) {
+            const suffix = getFilterSuffix(tabName);
+            return {
+                suffix,
+                monthFilter: document.getElementById(`month-filter-${suffix}`)?.value || '',
+                onboardingMonthFilter: document.getElementById(`onboarding-month-filter-${suffix}`)?.value || '',
+                closureMonthFilter: document.getElementById(`closure-month-filter-${suffix}`)?.value || '',
+                sellerFilter: document.getElementById(`seller-filter-${suffix}`)?.value || '',
+                statusFilter: document.getElementById(`status-filter-${suffix}`)?.value || '',
             };
         }
 
@@ -1167,6 +1345,8 @@
             const dateTo = document.getElementById(`date-to-${suffix}`)?.value || '';
             const onboardingMonthFilter = document.getElementById(`onboarding-month-filter-${suffix}`)?.value || '';
             const closureMonthFilter = document.getElementById(`closure-month-filter-${suffix}`)?.value || '';
+            const sellerFilter = document.getElementById(`seller-filter-${suffix}`)?.value || '';
+            const statusFilter = document.getElementById(`status-filter-${suffix}`)?.value || '';
             const onboardingDateFrom = document.getElementById(`onboarding-date-from-${suffix}`)?.value || '';
             const onboardingDateTo = document.getElementById(`onboarding-date-to-${suffix}`)?.value || '';
             const closureDateFrom = document.getElementById(`closure-date-from-${suffix}`)?.value || '';
@@ -1182,6 +1362,8 @@
                     if (amFilter && row.am !== amFilter) return false;
                     if (teamFilter && row.team !== teamFilter) return false;
                     if (programFilter && row.priority !== programFilter) return false;
+                    if (sellerFilter && row.sellerName !== sellerFilter) return false;
+                    if (statusFilter && row.status !== statusFilter) return false;
                     if (dateFrom && onboardingDate < dateFrom) return false;
                     if (dateTo && onboardingDate > dateTo) return false;
                     if (onboardingMonthFilter && getYearMonth(onboardingDate) !== onboardingMonthFilter) return false;
@@ -1195,9 +1377,9 @@
             }
 
             // Show filter summary
-            const summaryText = `Active Filters: ${monthFilter ? 'Sheet Month: ' + monthFilter + ' ' : ''}${onboardingMonthFilter ? 'Onboarding Month: ' + formatYearMonth(onboardingMonthFilter) + ' ' : ''}${closureMonthFilter ? 'Closure Month: ' + formatYearMonth(closureMonthFilter) + ' ' : ''}${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${onboardingDateFrom ? 'Onboarding From: ' + onboardingDateFrom + ' ' : ''}${onboardingDateTo ? 'Onboarding To: ' + onboardingDateTo + ' ' : ''}${closureDateFrom ? 'Closure From: ' + closureDateFrom + ' ' : ''}${closureDateTo ? 'Closure To: ' + closureDateTo + ' ' : ''}${dateFrom ? 'Legacy From: ' + dateFrom + ' ' : ''}${dateTo ? 'Legacy To: ' + dateTo : ''}`;
+            const summaryText = `Active Filters: ${monthFilter ? 'Sheet Month: ' + monthFilter + ' ' : ''}${onboardingMonthFilter ? 'Onboarding Month: ' + formatYearMonth(onboardingMonthFilter) + ' ' : ''}${closureMonthFilter ? 'Closure Month: ' + formatYearMonth(closureMonthFilter) + ' ' : ''}${sellerFilter ? 'Seller: ' + sellerFilter + ' ' : ''}${statusFilter ? 'Status: ' + statusFilter + ' ' : ''}${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${onboardingDateFrom ? 'Onboarding From: ' + onboardingDateFrom + ' ' : ''}${onboardingDateTo ? 'Onboarding To: ' + onboardingDateTo + ' ' : ''}${closureDateFrom ? 'Closure From: ' + closureDateFrom + ' ' : ''}${closureDateTo ? 'Closure To: ' + closureDateTo + ' ' : ''}${dateFrom ? 'Legacy From: ' + dateFrom + ' ' : ''}${dateTo ? 'Legacy To: ' + dateTo : ''}`;
             const summaryEl = document.getElementById(`filter-summary-${suffix}`);
-            if (monthFilter || onboardingMonthFilter || closureMonthFilter || amFilter || teamFilter || programFilter || onboardingDateFrom || onboardingDateTo || closureDateFrom || closureDateTo || dateFrom || dateTo) {
+            if (monthFilter || onboardingMonthFilter || closureMonthFilter || sellerFilter || statusFilter || amFilter || teamFilter || programFilter || onboardingDateFrom || onboardingDateTo || closureDateFrom || closureDateTo || dateFrom || dateTo) {
                 summaryEl.textContent = summaryText;
                 summaryEl.style.display = 'block';
             } else {
@@ -1229,6 +1411,8 @@
             resetId(`date-to-${suffix}`);
             resetId(`onboarding-month-filter-${suffix}`);
             resetId(`closure-month-filter-${suffix}`);
+            resetId(`seller-filter-${suffix}`);
+            resetId(`status-filter-${suffix}`);
             resetId(`onboarding-date-from-${suffix}`);
             resetId(`onboarding-date-to-${suffix}`);
             resetId(`closure-date-from-${suffix}`);
@@ -1322,10 +1506,29 @@
             const monthKey = getSelectedMonthKey('revenue-view');
             const monthData = getSelectedMonthData('revenue-view');
             const summary = summarizeRows(monthData);
+            const allFilteredRows = Object.values(filteredData).flat();
+            const filterValues = getFilterValues('revenue-view');
+            const currentRecurring = getCurrentRecurringMonthEntry(allFilteredRows, {
+                month: filterValues.closureMonthFilter,
+                seller: filterValues.sellerFilter,
+                status: filterValues.statusFilter,
+            });
+            const recurringByAm = getRecurringContributionByGroup(
+                allFilteredRows,
+                currentRecurring.monthKey,
+                'am',
+                {
+                    seller: filterValues.sellerFilter,
+                    status: filterValues.statusFilter,
+                }
+            );
 
             document.getElementById('revenueViewKPIs').innerHTML = [
                 {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'purple'},
-                {label: 'MRR', value: formatCurrency(summary.mrr), subtext: 'Monthly recurring revenue', class: 'success'},
+                {label: 'Recurring Month', value: currentRecurring.monthKey || 'N/A', subtext: 'Derived from closure lifecycle', class: 'purple'},
+                {label: 'MRR', value: formatCurrency(currentRecurring.mrr), subtext: 'Active seller monthly revenue', class: 'success'},
+                {label: 'ARR', value: formatCurrency(currentRecurring.arr), subtext: 'MRR × 12', class: 'success'},
+                {label: 'Active Sellers', value: formatNumber(currentRecurring.activeSellers), subtext: 'Recurring contracts in month', class: 'warning'},
                 {label: 'Pitched Revenue', value: formatCurrency(summary.pitchedRevenue), subtext: 'Amount pitched this month', class: 'warning'},
                 {label: 'Closure Revenue', value: formatCurrency(summary.closureRevenue), subtext: 'Revenue recorded at closure', class: 'alert'},
             ].map(k => `
@@ -1349,21 +1552,31 @@
 
             document.getElementById('revenueTable').innerHTML = `
                 <tr>
-                    <th>AM</th><th>Total</th><th>MRR</th><th>Pitched Revenue</th><th>Closure Revenue</th>
+                    <th>AM</th><th>Active Sellers</th><th>MRR</th><th>ARR</th><th>Total</th><th>Pitched Revenue</th><th>Closure Revenue</th>
                 </tr>
-                ${amArray.map(am => `
+                ${recurringByAm.map(am => {
+                    const legacy = amArray.find(item => item.am === am.name) || { total: 0, pitchedRevenue: 0, closureRevenue: 0 };
+                    return `
                     <tr>
-                        <td><strong>${am.am}</strong></td>
-                        <td>${am.total}</td>
+                        <td><strong>${am.name}</strong></td>
+                        <td>${am.activeSellers}</td>
                         <td>${formatCurrency(am.mrr)}</td>
-                        <td>${formatCurrency(am.pitchedRevenue)}</td>
-                        <td>${formatCurrency(am.closureRevenue)}</td>
+                        <td>${formatCurrency(am.arr)}</td>
+                        <td>${legacy.total}</td>
+                        <td>${formatCurrency(legacy.pitchedRevenue)}</td>
+                        <td>${formatCurrency(legacy.closureRevenue)}</td>
                     </tr>
-                `).join('')}
+                    `;
+                }).join('')}
             `;
 
-            initRevenueViewChart(summary);
-            initRevenueAmChart(amArray);
+            initRevenueViewChart({
+                mrr: currentRecurring.mrr,
+                arr: currentRecurring.arr,
+                pitchedRevenue: summary.pitchedRevenue,
+                closureRevenue: summary.closureRevenue,
+            });
+            initRevenueAmChart(recurringByAm.map(am => ({ am: am.name, mrr: am.mrr })));
         }
 
         function renderAMBreakdown() {
@@ -1447,27 +1660,40 @@
         }
 
         function renderMOM() {
+            const allFilteredRows = Object.values(filteredData).flat();
+            const filterValues = getFilterValues('mom-tracker');
+            const recurringTimeline = buildRecurringRevenueTimeline(allFilteredRows, {
+                seller: filterValues.sellerFilter,
+                status: filterValues.statusFilter,
+            });
+
             const monthStats = {};
-            for (let month in filteredData) {
-                monthStats[month] = summarizeRows(filteredData[month]);
-            }
+            recurringTimeline.forEach(entry => {
+                monthStats[entry.monthKey] = {
+                    total: 0,
+                    connected: 0,
+                    demo: 0,
+                    intent: 0,
+                    payment: 0,
+                    closed: 0,
+                    pitchedRevenue: 0,
+                    closureRevenue: 0,
+                    mrr: entry.mrr,
+                    arr: entry.arr,
+                    activeSellers: entry.activeSellers,
+                };
+            });
 
             document.getElementById('momTable').innerHTML = `
                 <tr>
-                    <th>Month</th><th>Total</th><th>Connected %</th><th>Demo %</th><th>Intent %</th><th>Payment %</th><th>Closures</th><th>Pitched Revenue</th><th>Closure Revenue</th><th>MRR</th>
+                    <th>Month</th><th>Active Sellers</th><th>MRR</th><th>ARR</th>
                 </tr>
                 ${Object.entries(monthStats).map(([month, stats]) => `
                     <tr>
                         <td><strong>${month}</strong></td>
-                        <td>${stats.total}</td>
-                        <td>${calculateRate(stats.connected, stats.total)}%</td>
-                        <td>${calculateRate(stats.demo, stats.total)}%</td>
-                        <td>${calculateRate(stats.intent, stats.total)}%</td>
-                        <td>${calculateRate(stats.payment, stats.total)}%</td>
-                        <td>${stats.closed}</td>
-                        <td>${formatCurrency(stats.pitchedRevenue)}</td>
-                        <td>${formatCurrency(stats.closureRevenue)}</td>
+                        <td>${stats.activeSellers}</td>
                         <td>${formatCurrency(stats.mrr)}</td>
+                        <td>${formatCurrency(stats.arr)}</td>
                     </tr>
                 `).join('')}
             `;
@@ -1613,11 +1839,11 @@
             window.revenueViewChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: ['MRR', 'Pitched Revenue', 'Closure Revenue'],
+                    labels: ['MRR', 'ARR', 'Pitched Revenue', 'Closure Revenue'],
                     datasets: [{
                         label: 'Revenue',
-                        data: [summary.mrr, summary.pitchedRevenue, summary.closureRevenue],
-                        backgroundColor: ['#10b981', '#667eea', '#f59e0b'],
+                        data: [summary.mrr, summary.arr, summary.pitchedRevenue, summary.closureRevenue],
+                        backgroundColor: ['#10b981', '#14b8a6', '#667eea', '#f59e0b'],
                     }]
                 },
                 options: {
@@ -1721,7 +1947,7 @@
                 type: 'line',
                 data: {
                     labels: months,
-                    datasets: [{label: 'Total Sellers', data: data.map(d => d.total), borderColor: '#667eea', backgroundColor: 'rgba(102, 126, 234, 0.1)', tension: 0.4, fill: true}]
+                    datasets: [{label: 'Active Sellers', data: data.map(d => d.activeSellers), borderColor: '#667eea', backgroundColor: 'rgba(102, 126, 234, 0.1)', tension: 0.4, fill: true}]
                 },
                 options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {display: false}}}
             });
@@ -1733,9 +1959,8 @@
                 data: {
                     labels: months,
                     datasets: [
-                        {label: 'Pitched Revenue', data: data.map(d => d.pitchedRevenue), borderColor: '#667eea', backgroundColor: 'rgba(102, 126, 234, 0.1)', tension: 0.3, fill: false},
-                        {label: 'Closure Revenue', data: data.map(d => d.closureRevenue), borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.1)', tension: 0.3, fill: false},
                         {label: 'MRR', data: data.map(d => d.mrr), borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', tension: 0.3, fill: false},
+                        {label: 'ARR', data: data.map(d => d.arr), borderColor: '#14b8a6', backgroundColor: 'rgba(20, 184, 166, 0.1)', tension: 0.3, fill: false},
                     ]
                 },
                 options: {
