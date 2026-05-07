@@ -51,6 +51,49 @@
         }
 
         /* Tab Navigation */
+        .dashboard-shell {
+            display: grid;
+            grid-template-columns: 68px minmax(0, 1fr);
+            gap: 14px;
+            align-items: start;
+        }
+
+        .mini-sidebar {
+            position: sticky;
+            top: 16px;
+            background: #0f1f4a;
+            border-radius: 14px;
+            border: 1px solid #1e315f;
+            padding: 10px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 12px 28px rgba(15, 31, 74, 0.25);
+        }
+
+        .mini-tab-btn {
+            width: 100%;
+            height: 42px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: #cbd5e1;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .mini-tab-btn:hover {
+            background: rgba(148, 163, 184, 0.14);
+            color: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        .mini-tab-btn.active {
+            background: #ffffff;
+            color: #0f1f4a;
+        }
+
         .tab-container {
             background: white;
             border-radius: 14px;
@@ -67,19 +110,19 @@
             flex-wrap: wrap;
             overflow-x: auto;
             gap: 6px;
-            padding: 8px;
+            padding: 10px;
         }
 
         .tab-btn {
-            padding: 10px 14px;
+            padding: 9px 13px;
             border: none;
             border-radius: 10px;
-            background: transparent;
+            background: #eef2f7;
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
             color: #475569;
-            border-bottom: 2px solid transparent;
+            border: 1px solid #d5dce8;
             transition: all 0.2s;
             white-space: nowrap;
         }
@@ -90,10 +133,10 @@
         }
 
         .tab-btn.active {
-            color: #0f172a;
-            background: white;
-            border-bottom-color: #0f172a;
-            box-shadow: inset 0 -2px 0 #0f172a;
+            color: #ffffff;
+            background: #0f1f4a;
+            border-color: #0f1f4a;
+            box-shadow: none;
         }
 
         /* Filters Panel */
@@ -532,6 +575,22 @@
         }
 
         @media (max-width: 768px) {
+            .dashboard-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .mini-sidebar {
+                position: static;
+                flex-direction: row;
+                overflow-x: auto;
+                gap: 6px;
+                padding: 8px;
+            }
+
+            .mini-tab-btn {
+                min-width: 44px;
+            }
+
             .charts-grid {
                 grid-template-columns: 1fr;
             }
@@ -574,14 +633,24 @@
             <p>Advanced Seller Retention Tracker with Multi-Level Filtering</p>
         </div>
 
+        <div class="dashboard-shell">
+        <aside class="mini-sidebar" aria-label="Quick navigation">
+            <button class="mini-tab-btn active" data-tab="active-month" onclick="switchTab('active-month')" title="Active Month">🏠</button>
+            <button class="mini-tab-btn" data-tab="revenue-view" onclick="switchTab('revenue-view')" title="Revenue View">₹</button>
+            <button class="mini-tab-btn" data-tab="am-breakdown" onclick="switchTab('am-breakdown')" title="AM Breakdown">👤</button>
+            <button class="mini-tab-btn" data-tab="team-breakdown" onclick="switchTab('team-breakdown')" title="Team Breakdown">👥</button>
+            <button class="mini-tab-btn" data-tab="mom-tracker" onclick="switchTab('mom-tracker')" title="Month-on-Month">📈</button>
+            <button class="mini-tab-btn" data-tab="funnel-view" onclick="switchTab('funnel-view')" title="Funnel View">🔄</button>
+        </aside>
+
         <div class="tab-container">
             <div class="tab-navigation">
-                <button class="tab-btn active" onclick="switchTab('active-month')">📅 Active Month</button>
-                <button class="tab-btn" onclick="switchTab('revenue-view')">💰 Revenue View</button>
-                <button class="tab-btn" onclick="switchTab('am-breakdown')">👤 AM Breakdown</button>
-                <button class="tab-btn" onclick="switchTab('team-breakdown')">👥 Team Breakdown</button>
-                <button class="tab-btn" onclick="switchTab('mom-tracker')">📈 Month-on-Month</button>
-                <button class="tab-btn" onclick="switchTab('funnel-view')">🔄 Funnel View</button>
+                <button class="tab-btn active" data-tab="active-month" onclick="switchTab('active-month')">Overview</button>
+                <button class="tab-btn" data-tab="revenue-view" onclick="switchTab('revenue-view')">Revenue</button>
+                <button class="tab-btn" data-tab="am-breakdown" onclick="switchTab('am-breakdown')">AM Performance</button>
+                <button class="tab-btn" data-tab="team-breakdown" onclick="switchTab('team-breakdown')">Team Performance</button>
+                <button class="tab-btn" data-tab="mom-tracker" onclick="switchTab('mom-tracker')">Monthly Trend</button>
+                <button class="tab-btn" data-tab="funnel-view" onclick="switchTab('funnel-view')">Funnel</button>
             </div>
 
             <!-- Active Month Tab -->
@@ -1021,6 +1090,7 @@
                     <table class="stats-table" id="funnelDetailsTable"></table>
                 </div>
             </div>
+        </div>
         </div>
 
         <div class="footer">
@@ -1589,12 +1659,10 @@
         // Tab switching
         function switchTab(tabName) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-btn, .mini-tab-btn').forEach(btn => btn.classList.remove('active'));
             
             document.getElementById(tabName).classList.add('active');
-            if (window.event && window.event.target) {
-                window.event.target.classList.add('active');
-            }
+            document.querySelectorAll(`.tab-btn[data-tab="${tabName}"], .mini-tab-btn[data-tab="${tabName}"]`).forEach(btn => btn.classList.add('active'));
 
             applyFilters(tabName);
             renderCurrentTab();
