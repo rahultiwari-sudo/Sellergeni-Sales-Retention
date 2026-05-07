@@ -405,6 +405,12 @@
             <div id="active-month" class="tab-content active">
                 <div class="filters-panel">
                     <div class="filter-group">
+                        <label class="filter-label">Month</label>
+                        <select id="month-filter-active" onchange="applyFilters('active-month')">
+                            <option value="">All Months</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
                         <label class="filter-label">Account Manager</label>
                         <select id="am-filter-active" onchange="applyFilters('active-month')">
                             <option value="">All AMs</option>
@@ -449,7 +455,7 @@
                 <div class="kpi-grid" id="activeMonthKPIs"></div>
                 <div class="chart-card">
                     <h3>🎯 Conversion Funnel</h3>
-                    <div id="aprilFunnelStages"></div>
+                    <div id="monthFunnelStages"></div>
                 </div>
                 <div class="charts-grid">
                     <div class="chart-card">
@@ -470,6 +476,12 @@
             <!-- AM Breakdown Tab -->
             <div id="am-breakdown" class="tab-content">
                 <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Month</label>
+                        <select id="month-filter-am" onchange="applyFilters('am-breakdown')">
+                            <option value="">All Months</option>
+                        </select>
+                    </div>
                     <div class="filter-group">
                         <label class="filter-label">Account Manager</label>
                         <select id="am-filter-am" onchange="applyFilters('am-breakdown')">
@@ -529,6 +541,12 @@
             <!-- Team Breakdown Tab -->
             <div id="team-breakdown" class="tab-content">
                 <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Month</label>
+                        <select id="month-filter-team" onchange="applyFilters('team-breakdown')">
+                            <option value="">All Months</option>
+                        </select>
+                    </div>
                     <div class="filter-group">
                         <label class="filter-label">Team</label>
                         <select id="team-filter-team" onchange="applyFilters('team-breakdown')">
@@ -641,6 +659,12 @@
             <!-- Funnel View Tab -->
             <div id="funnel-view" class="tab-content">
                 <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Month</label>
+                        <select id="month-filter-funnel" onchange="applyFilters('funnel-view')">
+                            <option value="">All Months</option>
+                        </select>
+                    </div>
                     <div class="filter-group">
                         <label class="filter-label">Account Manager</label>
                         <select id="am-filter-funnel" onchange="applyFilters('funnel-view')">
@@ -817,6 +841,46 @@
             return nextData;
         }
 
+        function getAvailableMonths() {
+            return Object.keys(rawData);
+        }
+
+        function getDefaultMonth() {
+            const months = getAvailableMonths();
+            if (months.includes('APRIL')) return 'APRIL';
+            return months[0] || '';
+        }
+
+        function populateMonthFilters() {
+            const months = getAvailableMonths();
+            const monthFilterIds = ['month-filter-active', 'month-filter-am', 'month-filter-team', 'month-filter-funnel'];
+
+            monthFilterIds.forEach(id => {
+                const select = document.getElementById(id);
+                if (!select) return;
+
+                const previousValue = select.value;
+                select.innerHTML = '<option value="">All Months</option>' + months.map(month => `<option value="${month}">${month}</option>`).join('');
+
+                const nextValue = previousValue && months.includes(previousValue) ? previousValue : getDefaultMonth();
+                if (nextValue) {
+                    select.value = nextValue;
+                }
+            });
+        }
+
+        function getSelectedMonthKey(tabName) {
+            const suffix = getFilterSuffix(tabName);
+            const monthValue = document.getElementById(`month-filter-${suffix}`)?.value || '';
+            if (monthValue && rawData[monthValue]) return monthValue;
+            return getDefaultMonth();
+        }
+
+        function getSelectedMonthData(tabName) {
+            const monthKey = getSelectedMonthKey(tabName);
+            return filteredData[monthKey] || [];
+        }
+
         function renderCurrentTab() {
             const currentTab = document.querySelector('.tab-content.active')?.id || 'active-month';
             if (currentTab === 'active-month') renderActiveMonth();
@@ -837,6 +901,7 @@
                 if (Object.keys(nextData).length > 0) {
                     rawData = nextData;
                     filteredData = JSON.parse(JSON.stringify(rawData));
+                    populateMonthFilters();
                     renderCurrentTab();
                     document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Live Google Sheets sync';
                 }
@@ -862,6 +927,7 @@
             const amFilter = document.getElementById(`am-filter-${getFilterSuffix(tabName)}`)?.value || '';
             const teamFilter = document.getElementById(`team-filter-${getFilterSuffix(tabName)}`)?.value || '';
             const programFilter = document.getElementById(`program-filter-${getFilterSuffix(tabName)}`)?.value || '';
+            const monthFilter = document.getElementById(`month-filter-${getFilterSuffix(tabName)}`)?.value || '';
             const dateFrom = document.getElementById(`date-from-${getFilterSuffix(tabName)}`)?.value || '';
             const dateTo = document.getElementById(`date-to-${getFilterSuffix(tabName)}`)?.value || '';
 
@@ -869,6 +935,7 @@
 
             for (let month in filteredData) {
                 filteredData[month] = filteredData[month].filter(row => {
+                    if (monthFilter && month !== monthFilter) return false;
                     if (amFilter && row.am !== amFilter) return false;
                     if (teamFilter && row.team !== teamFilter) return false;
                     if (programFilter && row.priority !== programFilter) return false;
@@ -879,9 +946,9 @@
             }
 
             // Show filter summary
-            const summaryText = `Active Filters: ${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${dateFrom ? 'From: ' + dateFrom + ' ' : ''}${dateTo ? 'To: ' + dateTo : ''}`;
+            const summaryText = `Active Filters: ${monthFilter ? 'Month: ' + monthFilter + ' ' : ''}${amFilter ? 'AM: ' + amFilter + ' ' : ''}${teamFilter ? 'Team: ' + teamFilter + ' ' : ''}${programFilter ? 'Program: ' + programFilter + ' ' : ''}${dateFrom ? 'From: ' + dateFrom + ' ' : ''}${dateTo ? 'To: ' + dateTo : ''}`;
             const summaryEl = document.getElementById(`filter-summary-${getFilterSuffix(tabName)}`);
-            if (amFilter || teamFilter || programFilter || dateFrom || dateTo) {
+            if (monthFilter || amFilter || teamFilter || programFilter || dateFrom || dateTo) {
                 summaryEl.textContent = summaryText;
                 summaryEl.style.display = 'block';
             } else {
@@ -899,6 +966,8 @@
 
         function clearFilters(tabName) {
             const suffix = getFilterSuffix(tabName);
+            const monthSelect = document.getElementById(`month-filter-${suffix}`);
+            if (monthSelect) monthSelect.value = '';
             document.getElementById(`am-filter-${suffix}`).value = '';
             document.getElementById(`team-filter-${suffix}`).value = '';
             document.getElementById(`program-filter-${suffix}`).value = '';
@@ -924,16 +993,18 @@
 
         // Render functions
         function renderActiveMonth() {
-            const april = filteredData['APRIL'];
-            const total = april.length;
-            const connected = april.filter(r => r.connected).length;
-            const demo = april.filter(r => r.demo).length;
-            const intent = april.filter(r => r.intent).length;
-            const payment = april.filter(r => r.payment).length;
-            const closed = april.filter(r => r.closed).length;
-            const revenue = april.reduce((sum, r) => sum + r.revenue, 0);
+            const monthKey = getSelectedMonthKey('active-month');
+            const monthData = getSelectedMonthData('active-month');
+            const total = monthData.length;
+            const connected = monthData.filter(r => r.connected).length;
+            const demo = monthData.filter(r => r.demo).length;
+            const intent = monthData.filter(r => r.intent).length;
+            const payment = monthData.filter(r => r.payment).length;
+            const closed = monthData.filter(r => r.closed).length;
+            const revenue = monthData.reduce((sum, r) => sum + r.revenue, 0);
 
             const kpis = [
+                {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'purple'},
                 {label: 'Total Sellers', value: formatNumber(total), subtext: 'Active prospects', class: 'success'},
                 {label: 'Connected', value: calculateRate(connected, total) + '%', subtext: connected + ' / ' + total, class: 'success'},
                 {label: 'Demo Completed', value: calculateRate(demo, total) + '%', subtext: demo + ' / ' + total, class: 'success'},
@@ -960,7 +1031,7 @@
                 {name: 'Closed', value: closed, rate: calculateRate(closed, total) + '%', class: 'low'},
             ];
 
-            document.getElementById('aprilFunnelStages').innerHTML = '<div class="funnel-section">' + stages.map(s => `
+            document.getElementById('monthFunnelStages').innerHTML = '<div class="funnel-section">' + stages.map(s => `
                 <div class="funnel-stage ${s.class}">
                     <div class="funnel-stage-name">${s.name}</div>
                     <div class="funnel-stage-value">${formatNumber(s.value)}</div>
@@ -969,12 +1040,12 @@
             `).join('') + '</div>';
 
             // Charts
-            initConversionChart(april, total);
+            initConversionChart(monthData, total);
             initRevenueChart(revenue);
         }
 
         function renderAMBreakdown() {
-            const april = filteredData['APRIL'];
+            const april = getSelectedMonthData('am-breakdown');
             
             const amStats = {};
             april.forEach(row => {
@@ -1014,7 +1085,7 @@
         }
 
         function renderTeamBreakdown() {
-            const april = filteredData['APRIL'];
+            const april = getSelectedMonthData('team-breakdown');
             
             const teamStats = {};
             april.forEach(row => {
@@ -1090,7 +1161,7 @@
         }
 
         function renderFunnelView() {
-            const april = filteredData['APRIL'];
+            const april = getSelectedMonthData('funnel-view');
             const total = april.length;
             const connected = april.filter(r => r.connected).length;
             const demo = april.filter(r => r.demo).length;
@@ -1306,6 +1377,7 @@
 
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
+            populateMonthFilters();
             renderActiveMonth();
             document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Loading Google Sheets data...';
             loadGoogleSheetData();
