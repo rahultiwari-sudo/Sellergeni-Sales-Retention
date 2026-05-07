@@ -89,6 +89,41 @@
         }
 
         /* Filters Panel */
+        .filters-dropdown-trigger {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border: 1px solid #d5dce8;
+            border-radius: 10px;
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .filters-dropdown-trigger:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+        }
+
+        .filters-dropdown-trigger .caret {
+            font-size: 12px;
+            color: #475569;
+            transition: transform 0.2s ease;
+        }
+
+        .filters-dropdown-trigger[aria-expanded="true"] .caret {
+            transform: rotate(180deg);
+        }
+
+        .filters-panel.hidden {
+            display: none;
+        }
+
         .filters-panel {
             position: relative;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
@@ -1201,6 +1236,36 @@
             });
         }
 
+        function initializeFilterDropdownMenus() {
+            const panels = document.querySelectorAll('.tab-content .filters-panel');
+
+            panels.forEach((panel, index) => {
+                if (panel.dataset.dropdownReady === 'true') return;
+
+                const trigger = document.createElement('button');
+                trigger.type = 'button';
+                trigger.className = 'filters-dropdown-trigger';
+                trigger.setAttribute('aria-expanded', 'false');
+                trigger.innerHTML = `<span>Filters</span><span class="caret">▾</span>`;
+
+                panel.classList.add('hidden');
+                panel.parentNode.insertBefore(trigger, panel);
+
+                trigger.addEventListener('click', () => {
+                    const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
+                    trigger.setAttribute('aria-expanded', String(!isExpanded));
+                    panel.classList.toggle('hidden', isExpanded);
+                });
+
+                panel.dataset.dropdownReady = 'true';
+
+                if (index === 0) {
+                    trigger.setAttribute('aria-expanded', 'true');
+                    panel.classList.remove('hidden');
+                }
+            });
+        }
+
         function populateDateBasedMonthFilters() {
             const allRows = Object.values(rawData).flat();
             const onboardingMonths = [...new Set(allRows.map(row => getYearMonth(row.onboardingDate || row.date)).filter(Boolean))].sort();
@@ -2177,6 +2242,7 @@
         // Initialize on load
         document.addEventListener('DOMContentLoaded', function() {
             injectDualDateFilters();
+            initializeFilterDropdownMenus();
             populateMonthFilters();
             renderActiveMonth();
             document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Loading Google Sheets data...';
