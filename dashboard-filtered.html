@@ -178,13 +178,11 @@
         .filters-panel {
             position: relative;
             background: #ffffff;
-            padding: 50px 14px 14px;
+            padding: 14px;
             border: 1px solid #dce3ee;
             border-radius: 18px;
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 8px;
+            display: block;
             margin-bottom: 18px;
             overflow: hidden;
         }
@@ -211,6 +209,89 @@
             right: 14px;
             height: 1px;
             background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 100%);
+        }
+
+        .filter-menu-shell {
+            display: grid;
+            grid-template-columns: 250px minmax(0, 1fr);
+            gap: 12px;
+            margin-top: 32px;
+        }
+
+        .filter-menu-list {
+            background: #f8fafc;
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+
+        .filter-menu-item {
+            width: 100%;
+            border: none;
+            background: transparent;
+            border-radius: 10px;
+            padding: 12px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
+        }
+
+        .filter-menu-item:hover {
+            background: #e8eef9;
+            transform: translateX(1px);
+        }
+
+        .filter-menu-item.active {
+            background: #dfe7fb;
+            color: #0f1f4a;
+            box-shadow: inset 0 0 0 1px rgba(15, 31, 74, 0.06);
+        }
+
+        .filter-menu-item .chev {
+            color: #64748b;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .filter-menu-detail {
+            background: #ffffff;
+            border: 1px solid #dbe4f0;
+            border-radius: 14px;
+            padding: 14px;
+            min-height: 280px;
+        }
+
+        .filter-menu-detail .filter-group {
+            margin-bottom: 10px;
+        }
+
+        .filter-menu-detail .filter-group.hidden-filter-group {
+            display: none;
+        }
+
+        .filter-menu-detail .filter-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .filter-section-title {
+            display: none;
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
         }
 
         .filter-group {
@@ -244,6 +325,10 @@
             border-color: #cfd8e6;
             box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
             transform: translateX(1px);
+        }
+
+        .filter-menu-detail .filter-group::after {
+            content: '';
         }
 
         .filter-group:has(.filter-btn) {
@@ -622,6 +707,20 @@
             .filters-panel::after {
                 left: 12px;
                 right: 12px;
+            }
+
+            .filter-menu-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-menu-list {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+
+            .filter-menu-item {
+                min-width: 160px;
+                flex: 0 0 auto;
             }
         }
     </style>
@@ -1383,6 +1482,72 @@
                     trigger.setAttribute('aria-expanded', 'true');
                     panel.classList.remove('hidden');
                 }
+            });
+        }
+
+        function buildFilterMenuShells() {
+            document.querySelectorAll('.tab-content .filters-panel').forEach(panel => {
+                if (panel.dataset.menuShellReady === 'true') return;
+
+                const groups = Array.from(panel.querySelectorAll('.filter-group'));
+                const actionGroup = groups.find(group => group.querySelector('.filter-btn')) || null;
+                const contentGroups = groups.filter(group => group !== actionGroup);
+
+                if (!contentGroups.length) return;
+
+                const shell = document.createElement('div');
+                shell.className = 'filter-menu-shell';
+
+                const list = document.createElement('div');
+                list.className = 'filter-menu-list';
+
+                const detail = document.createElement('div');
+                detail.className = 'filter-menu-detail';
+
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'filter-section-title';
+                sectionTitle.textContent = 'Filter Options';
+                detail.appendChild(sectionTitle);
+
+                const activeMap = new Map();
+
+                contentGroups.forEach((group, idx) => {
+                    const label = group.querySelector('.filter-label')?.textContent?.trim() || `Filter ${idx + 1}`;
+                    const key = `${panel.id || 'panel'}-${idx}`;
+                    activeMap.set(key, group);
+
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'filter-menu-item';
+                    item.dataset.filterKey = key;
+                    item.innerHTML = `<span>${label}</span><span class="chev">›</span>`;
+
+                    item.addEventListener('click', () => {
+                        list.querySelectorAll('.filter-menu-item').forEach(btn => btn.classList.remove('active'));
+                        item.classList.add('active');
+                        activeMap.forEach((el, mapKey) => {
+                            el.classList.toggle('hidden-filter-group', mapKey !== key);
+                        });
+                    });
+
+                    list.appendChild(item);
+
+                    if (idx === 0) item.classList.add('active');
+                    group.classList.toggle('hidden-filter-group', idx !== 0);
+                    detail.appendChild(group);
+                });
+
+                if (actionGroup) {
+                    actionGroup.classList.remove('hidden-filter-group');
+                    detail.appendChild(actionGroup);
+                }
+
+                shell.appendChild(list);
+                shell.appendChild(detail);
+
+                panel.innerHTML = '';
+                panel.appendChild(shell);
+                panel.dataset.menuShellReady = 'true';
             });
         }
 
@@ -2361,6 +2526,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             injectDualDateFilters();
             initializeFilterDropdownMenus();
+            buildFilterMenuShells();
             populateMonthFilters();
             renderActiveMonth();
             document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-IN') + ' | Loading Google Sheets data...';
