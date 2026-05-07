@@ -1289,6 +1289,24 @@
             };
         }
 
+        function getRecurringRevenueWarning(rows, recurringSnapshot) {
+            const closedRows = rows.filter(row => row.closed);
+            const missingAmount = closedRows.filter(row => !Number(row.closureAmount || 0));
+            const missingDuration = closedRows.filter(row => !Number(row.closureDurationMonths || 0));
+
+            if (!closedRows.length) return '';
+
+            if (missingAmount.length || missingDuration.length) {
+                return `Recurring revenue warning: ${missingAmount.length} closed seller(s) are missing Closure Amount and ${missingDuration.length} are missing Closure Duration, so MRR/ARR may be incomplete.`;
+            }
+
+            if (!recurringSnapshot || !recurringSnapshot.mrr) {
+                return 'Recurring revenue warning: closed sellers exist, but the current recurring revenue snapshot is zero. Check whether the live sheet has Closure Date, Closure Amount, and Closure Duration values populated.';
+            }
+
+            return '';
+        }
+
         function renderCurrentTab() {
             const currentTab = document.querySelector('.tab-content.active')?.id || 'active-month';
             if (currentTab === 'active-month') renderActiveMonth();
@@ -1522,8 +1540,15 @@
                     status: filterValues.statusFilter,
                 }
             );
+            const recurringWarning = getRecurringRevenueWarning(allFilteredRows, currentRecurring);
 
-            document.getElementById('revenueViewKPIs').innerHTML = [
+            const revenueWarningHtml = recurringWarning ? `
+                <div class="filter-summary" style="display:block; margin-bottom: 16px; border-color:#f59e0b; background:#fff7ed; color:#9a3412;">
+                    ${recurringWarning}
+                </div>
+            ` : '';
+
+            document.getElementById('revenueViewKPIs').innerHTML = revenueWarningHtml + [
                 {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'purple'},
                 {label: 'Recurring Month', value: currentRecurring.monthKey || 'N/A', subtext: 'Derived from closure lifecycle', class: 'purple'},
                 {label: 'MRR', value: formatCurrency(currentRecurring.mrr), subtext: 'Active seller monthly revenue', class: 'success'},
