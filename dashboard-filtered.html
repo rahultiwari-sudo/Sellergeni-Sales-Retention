@@ -92,25 +92,26 @@
         .filters-panel {
             position: relative;
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            padding: 56px 18px 18px;
+            padding: 50px 14px 14px;
             border: 1px solid #e5e7eb;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            border-radius: 18px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.07);
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 14px 16px;
+            grid-template-columns: 1fr;
+            gap: 8px;
             margin-bottom: 18px;
+            overflow: hidden;
         }
 
         .filters-panel::before {
             content: 'Filters';
             position: absolute;
-            top: 14px;
-            left: 18px;
+            top: 12px;
+            left: 14px;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #0f172a;
             letter-spacing: 0.2px;
@@ -119,45 +120,69 @@
         .filters-panel::after {
             content: '';
             position: absolute;
-            top: 46px;
-            left: 18px;
-            right: 18px;
+            top: 42px;
+            left: 14px;
+            right: 14px;
             height: 1px;
             background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 100%);
         }
 
         .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 14px;
-            border: 1px solid #e2e8f0;
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border: 1px solid #e5e7eb;
             border-radius: 14px;
-            background: #f8fafc;
-            min-height: 88px;
+            background: #ffffff;
+            min-height: 58px;
+            transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+        }
+
+        .filter-group::after {
+            content: '›';
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 20px;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .filter-group:hover {
+            background: #f8faff;
+            border-color: #dbe4ff;
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.05);
+            transform: translateX(1px);
         }
 
         .filter-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #475569;
+            font-size: 12px;
+            font-weight: 600;
+            color: #0f172a;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.04em;
             margin-bottom: 0;
+            padding-right: 20px;
         }
 
         .filter-control {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            width: 100%;
         }
 
         select, input[type="date"] {
             flex: 1;
-            min-height: 44px;
-            padding: 11px 14px;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
+            min-height: 40px;
+            padding: 9px 12px;
+            border: 1px solid #d7dce5;
+            border-radius: 10px;
             font-size: 13px;
             font-family: inherit;
             background: white;
@@ -179,31 +204,34 @@
 
         .filter-btn {
             width: 100%;
-            min-height: 44px;
-            padding: 11px 16px;
-            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            min-height: 40px;
+            padding: 10px 14px;
+            background: #172554;
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-            box-shadow: 0 8px 18px rgba(79, 70, 229, 0.18);
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+            box-shadow: 0 8px 18px rgba(23, 37, 84, 0.14);
         }
 
         .filter-btn:hover {
             transform: translateY(-1px);
-            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.22);
+            box-shadow: 0 12px 24px rgba(23, 37, 84, 0.18);
+            background: #1e3a8a;
         }
 
         .filter-btn.clear {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-            box-shadow: 0 8px 18px rgba(234, 88, 12, 0.18);
+            background: #e5e7eb;
+            color: #0f172a;
+            box-shadow: none;
         }
 
         .filter-btn.clear:hover {
-            box-shadow: 0 12px 24px rgba(234, 88, 12, 0.22);
+            background: #dbe4ff;
+            box-shadow: none;
         }
 
         .tab-content {
@@ -409,12 +437,12 @@
 
         .filter-summary {
             background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            padding: 12px 14px;
+            border: 1px solid #dbe4ff;
+            padding: 10px 14px;
             border-radius: 12px;
             margin-bottom: 20px;
             font-size: 12px;
-            color: #0f172a;
+            color: #334155;
             box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
         }
 
@@ -425,11 +453,17 @@
 
             .filters-panel {
                 grid-template-columns: 1fr;
-                padding: 52px 14px 14px;
+                padding: 48px 12px 12px;
             }
 
             .filter-group {
+                grid-template-columns: 1fr;
+                gap: 8px;
                 min-height: auto;
+            }
+
+            .filter-group::after {
+                content: '';
             }
 
             .tab-btn {
@@ -438,12 +472,12 @@
             }
 
             .filters-panel::before {
-                left: 14px;
+                left: 12px;
             }
 
             .filters-panel::after {
-                left: 14px;
-                right: 14px;
+                left: 12px;
+                right: 12px;
             }
         }
     </style>
