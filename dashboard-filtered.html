@@ -100,7 +100,7 @@
             border: 1px solid #dce3ee;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
             margin-bottom: 20px;
-            overflow: hidden;
+            overflow: visible;
         }
 
         .tab-navigation {
@@ -176,57 +176,53 @@
         }
 
         .filters-panel {
-            position: relative;
-            background: #ffffff;
-            padding: 14px;
-            border: 1px solid #dce3ee;
-            border-radius: 18px;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 190px;
+            background: transparent;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
             display: block;
-            margin-bottom: 18px;
-            overflow: hidden;
+            margin-bottom: 0;
+            overflow: visible;
+            z-index: 3;
+        }
+
+        .tab-content:not(.filters-open) .filters-panel {
+            display: none;
         }
 
         .filters-panel::before {
-            content: 'Filters';
-            position: absolute;
-            top: 12px;
-            left: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #0f172a;
-            letter-spacing: 0.2px;
+            content: '';
+            display: none;
         }
 
         .filters-panel::after {
             content: '';
-            position: absolute;
-            top: 42px;
-            left: 14px;
-            right: 14px;
-            height: 1px;
-            background: linear-gradient(90deg, #e2e8f0 0%, #f1f5f9 100%);
+            display: none;
         }
 
         .filter-menu-shell {
-            display: grid;
-            grid-template-columns: 250px minmax(0, 1fr);
-            gap: 12px;
-            margin-top: 32px;
+            position: relative;
+            width: 190px;
+            display: block;
+            margin-top: 0;
         }
 
         .filter-menu-list {
-            background: #f8fafc;
+            width: 190px;
+            background: #ffffff;
             border: 1px solid #dbe4f0;
-            border-radius: 14px;
+            border-radius: 16px;
             padding: 8px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
             min-width: 0;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
         }
 
         .filter-menu-item {
@@ -234,13 +230,14 @@
             border: none;
             background: transparent;
             border-radius: 10px;
-            padding: 12px 12px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
+            border-left: 3px solid transparent;
             color: #0f172a;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             cursor: pointer;
             text-align: left;
@@ -255,6 +252,9 @@
         .filter-menu-item.active {
             background: #dfe7fb;
             color: #0f1f4a;
+            border-left-color: #0f1f4a;
+            border-left-width: 3px;
+            font-weight: 600;
             box-shadow: inset 0 0 0 1px rgba(15, 31, 74, 0.06);
         }
 
@@ -265,15 +265,54 @@
         }
 
         .filter-menu-detail {
+            position: absolute;
+            left: calc(100% + 12px);
+            top: 0;
+            width: min(420px, calc(100vw - 260px));
+            max-width: 420px;
             background: #ffffff;
             border: 1px solid #dbe4f0;
             border-radius: 14px;
-            padding: 14px;
-            min-height: 280px;
+            padding: 16px;
+            min-height: 260px;
+            max-height: calc(100vh - 150px);
+            overflow: auto;
+            box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 4;
+        }
+
+        .filter-menu-detail-header {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .filter-menu-close {
+            width: 30px;
+            height: 30px;
+            border: 1px solid #d3dbe7;
+            border-radius: 9px;
+            background: #ffffff;
+            color: #475569;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .filter-menu-close:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #0f1f4a;
+            transform: translateY(-1px);
         }
 
         .filter-menu-detail .filter-group {
-            margin-bottom: 10px;
+            margin-bottom: 0;
         }
 
         .filter-menu-detail .filter-group.hidden-filter-group {
@@ -331,12 +370,38 @@
             content: '';
         }
 
+        .filter-menu-detail .filter-group:has(.filter-btn) {
+            margin-top: auto;
+            padding-top: 6px;
+        }
+
+        .filter-menu-detail .filter-group:has(.filter-btn) .filter-btn {
+            margin-top: 16px;
+        }
+
+        .filter-menu-detail .filter-group:has(.filter-btn) .filter-btn.clear {
+            margin-top: 6px;
+        }
+
         .filter-group:has(.filter-btn) {
             grid-template-columns: 1fr;
         }
 
         .filter-group:has(.filter-btn)::after {
             content: '';
+        }
+
+        .filter-menu-detail .filter-btn {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .filter-menu-detail .filter-btn:not(.clear) {
+            margin-top: 16px;
+        }
+
+        .filter-menu-detail .filter-btn.clear {
+            margin-top: 6px;
         }
 
         .filter-label {
@@ -417,10 +482,51 @@
             display: none;
             padding: 20px;
             animation: fadeIn 0.3s;
+            position: relative;
+            overflow: visible;
         }
 
         .tab-content.active {
             display: block;
+        }
+
+        .tab-content.active.filters-open::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.10);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .filters-toggle-button {
+            position: relative;
+            z-index: 2;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            margin: 0 0 12px 0;
+            border: 1px solid #d3dbe7;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .filters-toggle-button:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            transform: translateY(-1px);
+        }
+
+        .filters-toggle-button[aria-expanded="true"] {
+            background: #dfe7fb;
+            border-color: #0f1f4a;
+            color: #0f1f4a;
         }
 
         @keyframes fadeIn {
@@ -881,8 +987,9 @@
             }
 
             .filters-panel {
-                grid-template-columns: 1fr;
-                padding: 48px 12px 12px;
+                position: static;
+                width: auto;
+                margin-bottom: 18px;
             }
 
             .filter-group {
@@ -911,26 +1018,37 @@
             }
 
             .filters-panel::before {
-                left: 12px;
+                display: none;
             }
 
             .filters-panel::after {
-                left: 12px;
-                right: 12px;
+                display: none;
             }
 
             .filter-menu-shell {
-                grid-template-columns: 1fr;
+                width: 100%;
             }
 
             .filter-menu-list {
+                width: 100%;
                 flex-direction: row;
                 overflow-x: auto;
+                gap: 6px;
             }
 
             .filter-menu-item {
                 min-width: 160px;
                 flex: 0 0 auto;
+            }
+
+            .filter-menu-detail {
+                position: static;
+                width: auto;
+                max-width: none;
+                max-height: none;
+                left: auto;
+                top: auto;
+                margin-top: 12px;
             }
         }
     </style>
@@ -1682,36 +1800,66 @@
         function initializeFilterDropdownMenus() {
             const panels = document.querySelectorAll('.tab-content .filters-panel');
 
-            panels.forEach((panel, index) => {
+            panels.forEach((panel) => {
                 if (panel.dataset.dropdownReady === 'true') return;
 
-                const trigger = document.createElement('button');
-                trigger.type = 'button';
-                trigger.className = 'filters-dropdown-trigger';
-                trigger.setAttribute('aria-expanded', 'false');
-                trigger.innerHTML = `<span>Filters</span><span class="caret">▾</span>`;
-
-                panel.classList.add('hidden');
-                panel.parentNode.insertBefore(trigger, panel);
-
-                trigger.addEventListener('click', () => {
-                    const isExpanded = trigger.getAttribute('aria-expanded') === 'true';
-                    trigger.setAttribute('aria-expanded', String(!isExpanded));
-                    panel.classList.toggle('hidden', isExpanded);
-                });
-
-                panel.dataset.dropdownReady = 'true';
-
-                if (index === 0) {
-                    trigger.setAttribute('aria-expanded', 'true');
-                    panel.classList.remove('hidden');
+                const legacyTrigger = panel.previousElementSibling;
+                if (legacyTrigger && legacyTrigger.classList.contains('filters-dropdown-trigger')) {
+                    legacyTrigger.remove();
                 }
+
+                panel.classList.remove('hidden');
+                panel.dataset.dropdownReady = 'true';
             });
+        }
+
+        function getFilterTabContent(panel) {
+            return panel?.closest('.tab-content') || null;
+        }
+
+        function openFilterDrawer(panel) {
+            const tabContent = getFilterTabContent(panel);
+            if (!tabContent) return;
+
+            tabContent.classList.add('filters-open');
+            panel.style.display = 'block';
+
+            const trigger = tabContent.querySelector('.filters-toggle-button');
+            if (trigger) trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeFilterDrawer(panel) {
+            const tabContent = getFilterTabContent(panel);
+            if (!tabContent) return;
+
+            tabContent.classList.remove('filters-open');
+            panel.style.display = 'none';
+            const trigger = tabContent.querySelector('.filters-toggle-button');
+            if (trigger) trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function toggleFilterDrawer(panel) {
+            const tabContent = getFilterTabContent(panel);
+            if (!tabContent) return;
+
+            if (tabContent.classList.contains('filters-open')) closeFilterDrawer(panel);
+            else openFilterDrawer(panel);
         }
 
         function buildFilterMenuShells() {
             document.querySelectorAll('.tab-content .filters-panel').forEach(panel => {
                 if (panel.dataset.menuShellReady === 'true') return;
+
+                const tabContent = getFilterTabContent(panel);
+                if (tabContent && !tabContent.querySelector('.filters-toggle-button')) {
+                    const trigger = document.createElement('button');
+                    trigger.type = 'button';
+                    trigger.className = 'filters-toggle-button';
+                    trigger.setAttribute('aria-expanded', 'false');
+                    trigger.innerHTML = '<span>Filters</span><span>▾</span>';
+                    trigger.addEventListener('click', () => toggleFilterDrawer(panel));
+                    tabContent.insertBefore(trigger, panel);
+                }
 
                 const groups = Array.from(panel.querySelectorAll('.filter-group'));
                 const actionGroup = groups.find(group => group.querySelector('.filter-btn')) || null;
@@ -1728,12 +1876,25 @@
                 const detail = document.createElement('div');
                 detail.className = 'filter-menu-detail';
 
-                const sectionTitle = document.createElement('div');
-                sectionTitle.className = 'filter-section-title';
-                sectionTitle.textContent = 'Filter Options';
-                detail.appendChild(sectionTitle);
+                const detailHeader = document.createElement('div');
+                detailHeader.className = 'filter-menu-detail-header';
+
+                const closeButton = document.createElement('button');
+                closeButton.type = 'button';
+                closeButton.className = 'filter-menu-close';
+                closeButton.setAttribute('aria-label', 'Close filters');
+                closeButton.innerHTML = '&times;';
+                closeButton.addEventListener('click', () => closeFilterDrawer(panel));
+
+                detailHeader.appendChild(closeButton);
+                detail.appendChild(detailHeader);
 
                 const activeMap = new Map();
+
+                const positionFlyout = (item) => {
+                    if (!item) return;
+                    detail.style.top = `${Math.max(0, item.offsetTop)}px`;
+                };
 
                 contentGroups.forEach((group, idx) => {
                     const label = group.querySelector('.filter-label')?.textContent?.trim() || `Filter ${idx + 1}`;
@@ -1752,6 +1913,7 @@
                         activeMap.forEach((el, mapKey) => {
                             el.classList.toggle('hidden-filter-group', mapKey !== key);
                         });
+                        positionFlyout(item);
                     });
 
                     list.appendChild(item);
@@ -1762,9 +1924,38 @@
                 });
 
                 if (actionGroup) {
+                    actionGroup.classList.add('filter-menu-actions');
+                    actionGroup.style.marginTop = 'auto';
+                    actionGroup.style.paddingTop = '6px';
+
+                    const primaryButton = actionGroup.querySelector('.filter-btn:not(.clear)');
+                    const resetButton = actionGroup.querySelector('.filter-btn.clear');
+
+                    if (primaryButton) {
+                        primaryButton.style.marginTop = '16px';
+                    }
+
+                    if (resetButton) {
+                        resetButton.style.marginTop = '6px';
+                    }
+
+                    if (primaryButton && !primaryButton.dataset.closeDrawerBound) {
+                        primaryButton.addEventListener('click', () => closeFilterDrawer(panel));
+                        primaryButton.dataset.closeDrawerBound = 'true';
+                    }
+
                     actionGroup.classList.remove('hidden-filter-group');
                     detail.appendChild(actionGroup);
                 }
+
+                contentGroups.forEach(group => {
+                    const selectControls = group.querySelectorAll('select');
+                    selectControls.forEach(select => {
+                        if (select.dataset.closeDrawerBound) return;
+                        select.addEventListener('change', () => closeFilterDrawer(panel));
+                        select.dataset.closeDrawerBound = 'true';
+                    });
+                });
 
                 shell.appendChild(list);
                 shell.appendChild(detail);
@@ -1772,6 +1963,12 @@
                 panel.innerHTML = '';
                 panel.appendChild(shell);
                 panel.dataset.menuShellReady = 'true';
+                panel.style.display = 'none';
+
+                requestAnimationFrame(() => {
+                    const activeItem = list.querySelector('.filter-menu-item.active') || list.firstElementChild;
+                    positionFlyout(activeItem);
+                });
             });
         }
 
