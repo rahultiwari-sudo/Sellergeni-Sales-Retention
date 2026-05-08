@@ -2056,7 +2056,33 @@
                 pitchedRevenue: rows.reduce((sum, r) => sum + (r.amountPitched || 0), 0),
                 closureRevenue: rows.reduce((sum, r) => sum + (r.closureAmount || 0), 0),
                 mrr: rows.reduce((sum, r) => sum + (r.mrr || 0), 0),
+                pipelineAmount: calculatePipelineAmount(rows),
             };
+        }
+
+        function calculatePipelineAmount(rows) {
+            const today = new Date();
+            return rows.reduce((sum, r) => {
+                // Criteria:
+                // 1. Intent = Yes
+                // 2. Pitched amount available (> 0)
+                // 3. Closure has NOT been done (closed = false)
+                // 4. Do not consider sellers who have passed Onboarding date + 105 days
+                if (!r.intent || r.amountPitched <= 0 || r.closed) {
+                    return sum;
+                }
+                
+                // Check if seller has passed onboarding date + 105 days
+                const onboardingDate = new Date(r.onboardingDate || r.date);
+                if (!Number.isNaN(onboardingDate.getTime())) {
+                    const daysPassed = (today - onboardingDate) / (1000 * 60 * 60 * 24);
+                    if (daysPassed > 105) {
+                        return sum;
+                    }
+                }
+                
+                return sum + (r.amountPitched || 0);
+            }, 0);
         }
 
         function roundMoney(value) {
@@ -2450,6 +2476,7 @@
                 {label: 'MRR', value: formatCurrency(summary.mrr), subtext: 'Monthly recurring revenue', class: 'success'},
                 {label: 'Pitched Revenue', value: formatCurrency(summary.pitchedRevenue), subtext: 'Amount pitched this month', class: 'warning'},
                 {label: 'Closure Revenue', value: formatCurrency(summary.closureRevenue), subtext: 'Revenue recorded at closure', class: 'alert'},
+                {label: 'Pipeline Amount', value: formatCurrency(summary.pipelineAmount), subtext: 'Active pipeline opportunities', class: 'purple'},
             ].map(k => `
                 <div class="kpi-card ${k.class}">
                     <div class="kpi-label">${k.label}</div>
@@ -2500,6 +2527,7 @@
                 {label: 'Active Sellers', value: formatNumber(currentRecurring.activeSellers), subtext: 'Recurring contracts', class: 'pitched'},
                 {label: 'Pitched Revenue', value: formatCurrency(summary.pitchedRevenue), subtext: 'Pitched this month', class: 'pitched'},
                 {label: 'Closure Revenue', value: formatCurrency(summary.closureRevenue), subtext: 'Booked at closure', class: 'closure'},
+                {label: 'Pipeline Amount', value: formatCurrency(summary.pipelineAmount), subtext: 'Active pipeline opportunities', class: 'pitched'},
             ].map(k => `
                 <div class="revenue-summary-card ${k.class}">
                     <div class="revenue-summary-label">${k.label}</div>
