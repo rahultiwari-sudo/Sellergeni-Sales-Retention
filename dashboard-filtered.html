@@ -1101,6 +1101,7 @@
             <button class="mini-tab-btn" data-tab="am-breakdown" onclick="switchTab('am-breakdown')" title="AM Performance"><span class="mini-tab-icon">👤</span><span class="mini-tab-label">AM Performance</span></button>
             <button class="mini-tab-btn" data-tab="team-breakdown" onclick="switchTab('team-breakdown')" title="Team Performance"><span class="mini-tab-icon">👥</span><span class="mini-tab-label">Team Performance</span></button>
             <button class="mini-tab-btn" data-tab="mom-tracker" onclick="switchTab('mom-tracker')" title="Monthly Trend"><span class="mini-tab-icon">📈</span><span class="mini-tab-label">Monthly Trend</span></button>
+            <button class="mini-tab-btn" data-tab="active-pipeline" onclick="switchTab('active-pipeline')" title="Active Pipeline"><span class="mini-tab-icon">🧭</span><span class="mini-tab-label">Active Pipeline</span></button>
             <button class="mini-tab-btn" data-tab="funnel-view" onclick="switchTab('funnel-view')" title="Funnel"><span class="mini-tab-icon">🔄</span><span class="mini-tab-label">Funnel</span></button>
         </aside>
 
@@ -1474,6 +1475,58 @@
                 </div>
             </div>
 
+            <!-- Active Pipeline Tab -->
+            <div id="active-pipeline" class="tab-content">
+                <div class="filters-panel">
+                    <div class="filter-group">
+                        <label class="filter-label">Account Manager</label>
+                        <select id="am-filter-pipeline" onchange="applyFilters('active-pipeline')">
+                            <option value="">All AMs</option>
+                            <option value="Chamanth">Chamanth</option>
+                            <option value="Saikumar">Saikumar</option>
+                            <option value="Sanjay">Sanjay</option>
+                            <option value="Sarthak">Sarthak</option>
+                            <option value="Ved">Ved</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Team</label>
+                        <select id="team-filter-pipeline" onchange="applyFilters('active-pipeline')">
+                            <option value="">All Teams</option>
+                            <option value="POD-Chamath">POD-Chamath</option>
+                            <option value="POD-Sanjay">POD-Sanjay</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Program</label>
+                        <select id="program-filter-pipeline" onchange="applyFilters('active-pipeline')">
+                            <option value="">All Programs</option>
+                            <option value="P0">P0</option>
+                            <option value="P1">P1</option>
+                            <option value="P2">P2</option>
+                            <option value="P3">P3</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date Range</label>
+                        <div class="filter-control">
+                            <input type="date" id="date-from-pipeline" onchange="applyFilters('active-pipeline')">
+                            <input type="date" id="date-to-pipeline" onchange="applyFilters('active-pipeline')">
+                        </div>
+                    </div>
+                    <div class="filter-group" style="margin-top: 24px;">
+                        <button class="filter-btn" onclick="applyFilters('active-pipeline')">Apply Filters</button>
+                        <button class="filter-btn clear" onclick="clearFilters('active-pipeline')" style="margin-top: 5px;">Reset</button>
+                    </div>
+                </div>
+                <div class="filter-summary" id="filter-summary-pipeline" style="display:none;"></div>
+                <div class="kpi-grid" id="activePipelineKPIs"></div>
+                <div class="chart-card">
+                    <h3>📋 Active Pipeline by AM</h3>
+                    <table class="stats-table" id="activePipelineTable"></table>
+                </div>
+            </div>
+
             <!-- Funnel View Tab -->
             <div id="funnel-view" class="tab-content">
                 <div class="filters-panel">
@@ -1765,7 +1818,7 @@
         }
 
         function injectDualDateFilters() {
-            const tabs = ['active-month', 'revenue-view', 'am-breakdown', 'team-breakdown', 'mom-tracker', 'funnel-view'];
+            const tabs = ['active-month', 'revenue-view', 'am-breakdown', 'team-breakdown', 'mom-tracker', 'active-pipeline', 'funnel-view'];
 
             tabs.forEach(tabName => {
                 const suffix = getFilterSuffix(tabName);
@@ -2003,7 +2056,7 @@
             const closureMonths = [...new Set(allRows.map(row => getYearMonth(row.closureDate)).filter(Boolean))].sort();
             const sellers = [...new Set(allRows.map(row => normalizeText(row.sellerName)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
             const statuses = [...new Set(allRows.map(row => normalizeText(row.status)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-            const suffixes = ['active', 'revenue', 'am', 'team', 'mom', 'funnel'];
+            const suffixes = ['active', 'revenue', 'am', 'team', 'mom', 'pipeline', 'funnel'];
 
             suffixes.forEach(suffix => {
                 setSelectOptions(document.getElementById(`onboarding-month-filter-${suffix}`), onboardingMonths, 'All Onboarding Months');
@@ -2286,6 +2339,7 @@
             else if (currentTab === 'am-breakdown') renderAMBreakdown();
             else if (currentTab === 'team-breakdown') renderTeamBreakdown();
             else if (currentTab === 'mom-tracker') renderMOM();
+            else if (currentTab === 'active-pipeline') renderActivePipeline();
             else if (currentTab === 'funnel-view') renderFunnelView();
         }
 
@@ -2381,6 +2435,7 @@
             else if (currentTab === 'am-breakdown') renderAMBreakdown();
             else if (currentTab === 'team-breakdown') renderTeamBreakdown();
             else if (currentTab === 'mom-tracker') renderMOM();
+            else if (currentTab === 'active-pipeline') renderActivePipeline();
             else if (currentTab === 'funnel-view') renderFunnelView();
         }
 
@@ -2419,6 +2474,7 @@
                 'am-breakdown': 'am',
                 'team-breakdown': 'team',
                 'mom-tracker': 'mom',
+                'active-pipeline': 'pipeline',
                 'funnel-view': 'funnel'
             };
             return map[tabName];
@@ -2719,6 +2775,69 @@
             `;
 
             initMOMCharts(monthStats);
+        }
+
+        function renderActivePipeline() {
+            const allRows = Object.values(filteredData).flat();
+            const today = new Date();
+            const openPipelineRows = allRows.filter(row => {
+                if (!row.intent || Number(row.amountPitched || 0) <= 0 || row.closed) return false;
+
+                const onboardingDate = new Date(row.onboardingDate || row.date);
+                if (!Number.isNaN(onboardingDate.getTime())) {
+                    const daysPassed = (today - onboardingDate) / (1000 * 60 * 60 * 24);
+                    if (daysPassed > 105) return false;
+                }
+
+                return true;
+            });
+
+            const summary = summarizeRows(allRows);
+            const intentCount = allRows.filter(row => row.intent).length;
+            const pitchedCount = allRows.filter(row => Number(row.amountPitched || 0) > 0).length;
+            const avgPipelinePerSeller = openPipelineRows.length ? summary.pipelineAmount / openPipelineRows.length : 0;
+
+            document.getElementById('activePipelineKPIs').innerHTML = [
+                {label: 'Coverage', value: 'All Months', subtext: 'Ignores selected sheet month', class: 'purple'},
+                {label: 'Total Sellers', value: formatNumber(allRows.length), subtext: 'All sellers in current filters', class: 'success'},
+                {label: 'Intent Sellers', value: formatNumber(intentCount), subtext: calculateRate(intentCount, allRows.length) + '% of total', class: 'warning'},
+                {label: 'Pitched Sellers', value: formatNumber(pitchedCount), subtext: calculateRate(pitchedCount, allRows.length) + '% of total', class: 'warning'},
+                {label: 'Active Pipeline Sellers', value: formatNumber(openPipelineRows.length), subtext: 'Intent + pitched + not closed + <=105 days', class: 'alert'},
+                {label: 'Pipeline Amount', value: formatCurrency(summary.pipelineAmount), subtext: 'Total active pipeline value', class: 'purple'},
+                {label: 'Avg Pipeline / Seller', value: formatCurrency(avgPipelinePerSeller), subtext: 'Across active pipeline sellers', class: 'success'},
+            ].map(k => `
+                <div class="kpi-card ${k.class}">
+                    <div class="kpi-label">${k.label}</div>
+                    <div class="kpi-value">${k.value}</div>
+                    <div class="kpi-subtext">${k.subtext}</div>
+                </div>
+            `).join('');
+
+            const byAm = {};
+            openPipelineRows.forEach(row => {
+                const amName = normalizeText(row.am) || 'Unassigned';
+                if (!byAm[amName]) {
+                    byAm[amName] = { am: amName, sellers: 0, pipelineAmount: 0 };
+                }
+                byAm[amName].sellers += 1;
+                byAm[amName].pipelineAmount += Number(row.amountPitched || 0);
+            });
+
+            const amRows = Object.values(byAm).sort((a, b) => b.pipelineAmount - a.pipelineAmount);
+
+            document.getElementById('activePipelineTable').innerHTML = `
+                <tr>
+                    <th>AM</th><th>Active Pipeline Sellers</th><th>Pipeline Amount</th><th>Avg / Seller</th>
+                </tr>
+                ${amRows.map(am => `
+                    <tr>
+                        <td><strong>${am.am}</strong></td>
+                        <td>${formatNumber(am.sellers)}</td>
+                        <td>${formatCurrency(am.pipelineAmount)}</td>
+                        <td>${formatCurrency(am.sellers ? am.pipelineAmount / am.sellers : 0)}</td>
+                    </tr>
+                `).join('')}
+            `;
         }
 
         function renderFunnelView() {
