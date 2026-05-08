@@ -53,90 +53,116 @@
         /* Tab Navigation */
         .dashboard-shell {
             display: grid;
-            grid-template-columns: 68px minmax(0, 1fr);
-            gap: 14px;
+            grid-template-columns: 280px minmax(0, 1fr);
+            gap: 16px;
             align-items: start;
         }
 
         .mini-sidebar {
             position: sticky;
             top: 16px;
-            background: #0f1f4a;
-            border-radius: 14px;
-            border: 1px solid #1e315f;
-            padding: 10px 8px;
+            background: #0b1430;
+            border-radius: 18px;
+            border: 1px solid #1b2550;
+            padding: 16px 14px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            box-shadow: 0 12px 28px rgba(15, 31, 74, 0.25);
+            gap: 12px;
+            box-shadow: 0 18px 36px rgba(8, 15, 37, 0.35);
+            max-height: calc(100vh - 32px);
+            overflow: auto;
+        }
+
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ffffff;
+            padding: 8px 6px 12px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+            margin-bottom: 2px;
+        }
+
+        .sidebar-brand-mark {
+            width: 34px;
+            height: 34px;
+            border-radius: 11px;
+            background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
+            color: #0b1430;
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 18px;
+            flex: 0 0 auto;
+        }
+
+        .sidebar-brand-copy {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar-brand-copy strong {
+            font-size: 16px;
+            line-height: 1.1;
+        }
+
+        .sidebar-brand-copy span {
+            font-size: 11px;
+            color: #b6c2e2;
+        }
+
+        .sidebar-section-label {
+            color: #93a4cf;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            padding: 4px 6px 0;
         }
 
         .mini-tab-btn {
             width: 100%;
-            height: 42px;
-            border: none;
-            border-radius: 10px;
+            min-height: 46px;
+            border: 1px solid transparent;
+            border-radius: 12px;
             background: transparent;
-            color: #cbd5e1;
-            font-size: 18px;
+            color: #dbe4ff;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+            transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 12px;
+            padding: 0 14px;
+            text-align: left;
         }
 
         .mini-tab-btn:hover {
-            background: rgba(148, 163, 184, 0.14);
+            background: rgba(148, 163, 184, 0.12);
             color: #ffffff;
             transform: translateY(-1px);
         }
 
         .mini-tab-btn.active {
             background: #ffffff;
-            color: #0f1f4a;
+            color: #0b1430;
+            border-color: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
         }
 
-        .tab-container {
-            background: white;
-            border-radius: 14px;
-            border: 1px solid #dce3ee;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
-            margin-bottom: 20px;
-            overflow: visible;
+        .mini-tab-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1;
+            flex: 0 0 auto;
         }
 
-        .tab-navigation {
-            display: flex;
-            border-bottom: 1px solid #e2e8f0;
-            background: #f8fafc;
-            flex-wrap: wrap;
-            overflow-x: auto;
-            gap: 6px;
-            padding: 10px;
-        }
-
-        .tab-btn {
-            padding: 9px 13px;
-            border: none;
-            border-radius: 10px;
-            background: #eef2f7;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 600;
-            color: #475569;
-            border: 1px solid #d5dce8;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .tab-btn:hover {
-            background: #e2e8f0;
-            color: #0f172a;
-        }
-
-        .tab-btn.active {
-            color: #ffffff;
-            background: #0f1f4a;
-            border-color: #0f1f4a;
-            box-shadow: none;
+        .mini-tab-label {
+            flex: 1 1 auto;
         }
 
         /* Filters Panel */
@@ -964,14 +990,7 @@
 
             .mini-sidebar {
                 position: static;
-                flex-direction: row;
-                overflow-x: auto;
-                gap: 6px;
-                padding: 8px;
-            }
-
-            .mini-tab-btn {
-                min-width: 44px;
+                max-height: none;
             }
 
             .charts-grid {
@@ -1000,11 +1019,6 @@
 
             .filter-group::after {
                 content: '';
-            }
-
-            .tab-btn {
-                padding: 12px 16px;
-                font-size: 11px;
             }
 
             .mom-chart-card .chart-container,
@@ -1061,25 +1075,24 @@
         </div>
 
         <div class="dashboard-shell">
-        <aside class="mini-sidebar" aria-label="Quick navigation">
-            <button class="mini-tab-btn active" data-tab="active-month" onclick="switchTab('active-month')" title="Active Month">🏠</button>
-            <button class="mini-tab-btn" data-tab="revenue-view" onclick="switchTab('revenue-view')" title="Revenue View">₹</button>
-            <button class="mini-tab-btn" data-tab="am-breakdown" onclick="switchTab('am-breakdown')" title="AM Breakdown">👤</button>
-            <button class="mini-tab-btn" data-tab="team-breakdown" onclick="switchTab('team-breakdown')" title="Team Breakdown">👥</button>
-            <button class="mini-tab-btn" data-tab="mom-tracker" onclick="switchTab('mom-tracker')" title="Month-on-Month">📈</button>
-            <button class="mini-tab-btn" data-tab="funnel-view" onclick="switchTab('funnel-view')" title="Funnel View">🔄</button>
+        <aside class="mini-sidebar" aria-label="Primary navigation">
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-mark">S</div>
+                <div class="sidebar-brand-copy">
+                    <strong>SellerGeni</strong>
+                    <span>Retention dashboard</span>
+                </div>
+            </div>
+            <div class="sidebar-section-label">Views</div>
+            <button class="mini-tab-btn active" data-tab="active-month" onclick="switchTab('active-month')" title="Overview"><span class="mini-tab-icon">🏠</span><span class="mini-tab-label">Overview</span></button>
+            <button class="mini-tab-btn" data-tab="revenue-view" onclick="switchTab('revenue-view')" title="Revenue"><span class="mini-tab-icon">₹</span><span class="mini-tab-label">Revenue</span></button>
+            <button class="mini-tab-btn" data-tab="am-breakdown" onclick="switchTab('am-breakdown')" title="AM Performance"><span class="mini-tab-icon">👤</span><span class="mini-tab-label">AM Performance</span></button>
+            <button class="mini-tab-btn" data-tab="team-breakdown" onclick="switchTab('team-breakdown')" title="Team Performance"><span class="mini-tab-icon">👥</span><span class="mini-tab-label">Team Performance</span></button>
+            <button class="mini-tab-btn" data-tab="mom-tracker" onclick="switchTab('mom-tracker')" title="Monthly Trend"><span class="mini-tab-icon">📈</span><span class="mini-tab-label">Monthly Trend</span></button>
+            <button class="mini-tab-btn" data-tab="funnel-view" onclick="switchTab('funnel-view')" title="Funnel"><span class="mini-tab-icon">🔄</span><span class="mini-tab-label">Funnel</span></button>
         </aside>
 
         <div class="tab-container">
-            <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="active-month" onclick="switchTab('active-month')">Overview</button>
-                <button class="tab-btn" data-tab="revenue-view" onclick="switchTab('revenue-view')">Revenue</button>
-                <button class="tab-btn" data-tab="am-breakdown" onclick="switchTab('am-breakdown')">AM Performance</button>
-                <button class="tab-btn" data-tab="team-breakdown" onclick="switchTab('team-breakdown')">Team Performance</button>
-                <button class="tab-btn" data-tab="mom-tracker" onclick="switchTab('mom-tracker')">Monthly Trend</button>
-                <button class="tab-btn" data-tab="funnel-view" onclick="switchTab('funnel-view')">Funnel</button>
-            </div>
-
             <!-- Active Month Tab -->
             <div id="active-month" class="tab-content active">
                 <div class="filters-panel">
