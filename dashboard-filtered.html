@@ -56,6 +56,32 @@
             object-fit: contain;
         }
 
+        .header-brand-copy {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 2px;
+            min-width: 0;
+        }
+
+        .header-brand-copy strong {
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .header-brand-copy span {
+            color: rgba(255, 255, 255, 0.72);
+            font-size: 11px;
+            line-height: 1.1;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+
         /* Tab Navigation */
         .dashboard-shell {
             display: grid;
@@ -1057,6 +1083,10 @@
         <div class="header">
             <div class="header-brand">
                 <img src="Main%20logo.png" alt="SellerGeni logo">
+                <div class="header-brand-copy">
+                    <strong>SELLERGENI PROGRAMS RETENTION DASHBOARD</strong>
+                    <span>Programs and retention overview</span>
+                </div>
             </div>
         </div>
 
