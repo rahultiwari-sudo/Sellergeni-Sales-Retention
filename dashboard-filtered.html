@@ -2498,7 +2498,8 @@
 
         // Render functions
         function renderActiveMonth() {
-            const monthKey = getSelectedMonthKey('active-month');
+            const monthFilter = document.getElementById('month-filter-active')?.value || '';
+            const monthKey = monthFilter || 'All Months';
             const monthData = getSelectedMonthData('active-month');
             const summary = summarizeRows(monthData);
             const total = summary.total;
@@ -2509,7 +2510,7 @@
             const closed = summary.closed;
 
             const kpis = [
-                {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'purple'},
+                {label: 'Month', value: monthKey, subtext: 'Sheet tab in view', class: 'purple'},
                 {label: 'Total Sellers', value: formatNumber(total), subtext: 'Active prospects', class: 'success'},
                 {label: 'Connected', value: calculateRate(connected, total) + '%', subtext: connected + ' / ' + total, class: 'success'},
                 {label: 'Demo Completed', value: calculateRate(demo, total) + '%', subtext: demo + ' / ' + total, class: 'success'},
@@ -2564,7 +2565,8 @@
         }
 
         function renderRevenueView() {
-            const monthKey = getSelectedMonthKey('revenue-view');
+            const monthFilter = document.getElementById('month-filter-revenue')?.value || '';
+            const monthKey = monthFilter || 'All Months';
             const monthData = getSelectedMonthData('revenue-view');
             const summary = summarizeRows(monthData);
             const allFilteredRows = Object.values(filteredData).flat();
@@ -2592,7 +2594,7 @@
             ` : '';
 
             document.getElementById('revenueSummaryGrid').innerHTML = revenueWarningHtml + [
-                {label: 'Month', value: monthKey || 'All', subtext: 'Sheet tab in view', class: 'month'},
+                {label: 'Month', value: monthKey, subtext: 'Sheet tab in view', class: 'month'},
                 {label: 'Recurring Month', value: currentRecurring.monthKey ? formatYearMonth(currentRecurring.monthKey) : 'N/A', subtext: 'Closure lifecycle month', class: 'recurring'},
                 {label: 'MRR', value: formatCurrency(currentRecurring.mrr), subtext: 'Monthly recurring revenue', class: 'mrr'},
                 {label: 'ARR', value: formatCurrency(currentRecurring.arr), subtext: 'MRR × 12', class: 'arr'},
