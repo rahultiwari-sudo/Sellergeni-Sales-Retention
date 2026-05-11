@@ -2098,8 +2098,20 @@
         }
 
         function getSelectedMonthData(tabName) {
-            const monthKey = getSelectedMonthKey(tabName);
-            return filteredData[monthKey] || [];
+            const suffix = getFilterSuffix(tabName);
+            const monthValue = document.getElementById(`month-filter-${suffix}`)?.value || '';
+            
+            // If "All Months" is selected (empty value), combine data from all months
+            if (!monthValue) {
+                const allData = [];
+                for (let month in filteredData) {
+                    allData.push(...filteredData[month]);
+                }
+                return allData;
+            }
+            
+            // Otherwise return data for the selected month
+            return filteredData[monthValue] || [];
         }
 
         function summarizeRows(rows) {
