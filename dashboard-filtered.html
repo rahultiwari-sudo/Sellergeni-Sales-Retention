@@ -2967,8 +2967,8 @@
                 const payment = monthData.filter(r => r.payment).length;
                 const closed = monthData.filter(r => r.closed).length;
                 
-                const pitchedRevenue = monthData.reduce((sum, r) => sum + (Number(r.revenue) || 0), 0);
-                const closureRevenue = monthData.reduce((sum, r) => sum + (r.closed ? Number(r.revenue) || 0 : 0), 0);
+                const pitchedRevenue = monthData.reduce((sum, r) => sum + (Number(r.amountPitched) || 0), 0);
+                const closureRevenue = monthData.reduce((sum, r) => sum + (r.closed ? Number(r.closureAmount) || 0 : 0), 0);
                 
                 // Calculate MRR (assuming closure revenue is the base for MRR calculation)
                 const mrr = closureRevenue > 0 ? closureRevenue / 12 : 0;
