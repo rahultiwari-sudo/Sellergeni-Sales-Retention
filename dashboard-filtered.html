@@ -3047,8 +3047,10 @@
                     const payment = monthRows.filter(r => r.payment).length;
                     const closed = monthRows.filter(r => r.closed).length;
 
-                    const pitchedRevenue = monthRows.reduce((sum, r) => sum + (Number(r.revenue) || 0), 0);
-                    const closureRevenue = monthRows.reduce((sum, r) => sum + (r.closed ? Number(r.revenue) || 0 : 0), 0);
+                    // Only count closure revenue for rows with valid closureAmount and closureDurationMonths
+                    const validClosureRows = monthRows.filter(r => r.closed && Number(r.closureAmount) > 0 && Number(r.closureDurationMonths) > 0);
+                    const pitchedRevenue = monthRows.reduce((sum, r) => sum + (Number(r.amountPitched) || 0), 0);
+                    const closureRevenue = validClosureRows.reduce((sum, r) => sum + (Number(r.closureAmount) || 0), 0);
                     const mrr = closureRevenue > 0 ? closureRevenue / 12 : 0;
 
                     tableHTML += `
