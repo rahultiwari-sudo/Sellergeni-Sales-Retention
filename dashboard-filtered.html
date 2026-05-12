@@ -1604,6 +1604,10 @@
                     <h3>📊 Monthly Onboarding Funnel Metrics</h3>
                     <table class="stats-table" id="monthlyFunnelMetricsTable"></table>
                 </div>
+                <div class="chart-card">
+                    <h3>📊 Monthly Closure Funnel Metrics (by Closure Date)</h3>
+                    <table class="stats-table" id="monthlyClosureFunnelMetricsTable"></table>
+                </div>
             </div>
         </div>
         </div>
@@ -2909,6 +2913,7 @@
 
             // Populate monthly onboarding funnel metrics table (unfiltered raw data)
             populateMonthlyFunnelMetricsTable();
+            populateMonthlyClosureFunnelMetricsTable();
 
             initFunnelCharts(stages, total);
         }
@@ -2985,6 +2990,85 @@
             });
 
             document.getElementById('monthlyFunnelMetricsTable').innerHTML = tableHTML;
+        }
+
+        function populateMonthlyClosureFunnelMetricsTable() {
+            // Gather closure months across all rawData rows
+            const allRows = Object.values(rawData).flat();
+            const closureMonths = [...new Set(allRows.map(r => getYearMonth(r.closureDate)).filter(Boolean))].sort();
+
+            let tableHTML = `
+                <tr>
+                    <th>Closure Month</th>
+                    <th>Total</th>
+                    <th>Connected %</th>
+                    <th>Demo %</th>
+                    <th>Intent %</th>
+                    <th>Payment %</th>
+                    <th>Closures</th>
+                    <th>Pitched Revenue</th>
+                    <th>Closure Revenue</th>
+                    <th>MRR</th>
+                </tr>
+            `;
+
+            if (!closureMonths.length) {
+                tableHTML += `
+                    <tr>
+                        <td colspan="10">No closure date data available</td>
+                    </tr>
+                `;
+            } else {
+                closureMonths.forEach(monthKey => {
+                    const monthRows = allRows.filter(r => getYearMonth(r.closureDate) === monthKey);
+                    const total = monthRows.length;
+
+                    if (total === 0) {
+                        tableHTML += `
+                            <tr>
+                                <td>${formatYearMonth(monthKey)}</td>
+                                <td>0</td>
+                                <td>0%</td>
+                                <td>0%</td>
+                                <td>0%</td>
+                                <td>0%</td>
+                                <td>0</td>
+                                <td>₹0</td>
+                                <td>₹0</td>
+                                <td>₹0</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    const connected = monthRows.filter(r => r.connected).length;
+                    const demo = monthRows.filter(r => r.demo).length;
+                    const intent = monthRows.filter(r => r.intent).length;
+                    const payment = monthRows.filter(r => r.payment).length;
+                    const closed = monthRows.filter(r => r.closed).length;
+
+                    const pitchedRevenue = monthRows.reduce((sum, r) => sum + (Number(r.revenue) || 0), 0);
+                    const closureRevenue = monthRows.reduce((sum, r) => sum + (r.closed ? Number(r.revenue) || 0 : 0), 0);
+                    const mrr = closureRevenue > 0 ? closureRevenue / 12 : 0;
+
+                    tableHTML += `
+                        <tr>
+                            <td>${formatYearMonth(monthKey)}</td>
+                            <td>${formatNumber(total)}</td>
+                            <td>${calculateRate(connected, total)}%</td>
+                            <td>${calculateRate(demo, total)}%</td>
+                            <td>${calculateRate(intent, total)}%</td>
+                            <td>${calculateRate(payment, total)}%</td>
+                            <td>${formatNumber(closed)}</td>
+                            <td>${formatCurrency(pitchedRevenue)}</td>
+                            <td>${formatCurrency(closureRevenue)}</td>
+                            <td>${formatCurrency(mrr)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            document.getElementById('monthlyClosureFunnelMetricsTable').innerHTML = tableHTML;
         }
 
         // Chart initialization functions
