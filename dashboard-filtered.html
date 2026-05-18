@@ -2940,7 +2940,7 @@
             `;
 
             months.forEach(month => {
-                const monthData = rawData[month] || [];
+                const monthData = filteredData[month] || [];
                 const total = monthData.length;
                 
                 if (total === 0) {
@@ -2993,8 +2993,8 @@
         }
 
         function populateMonthlyClosureFunnelMetricsTable() {
-            // Gather closure months across all rawData rows
-            const allRows = Object.values(rawData).flat();
+            // Gather closure months across the currently filtered rows so closure-date filters apply everywhere.
+            const allRows = Object.values(filteredData).flat();
             const closureMonths = [...new Set(allRows.map(r => getYearMonth(r.closureDate)).filter(Boolean))].sort();
 
             let tableHTML = `
