@@ -1778,7 +1778,9 @@
 
                 const worksheet = workbook.Sheets[sheetName];
                 const rows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
-                nextData[monthKey] = rows.map(mapSheetRow).filter(row => row.am || row.team || row.date);
+                nextData[monthKey] = rows.map(mapSheetRow).filter(row => {
+                    return row.sellerName || row.am || row.team || row.date || row.closureDate || row.amountPitched || row.closureAmount || row.status;
+                });
             });
 
             return nextData;
