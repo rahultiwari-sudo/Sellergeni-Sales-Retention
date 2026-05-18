@@ -2993,8 +2993,8 @@
         }
 
         function populateMonthlyClosureFunnelMetricsTable() {
-            // Gather closure months across the currently filtered rows so closure-date filters apply everywhere.
-            const allRows = Object.values(filteredData).flat();
+            // Closure-month reporting is global by closure date, not limited to the selected onboarding month.
+            const allRows = Object.values(rawData).flat();
             const closureMonths = [...new Set(allRows.map(r => getYearMonth(r.closureDate)).filter(Boolean))].sort();
 
             let tableHTML = `
