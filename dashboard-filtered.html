@@ -1730,6 +1730,7 @@
         function mapSheetRow(row) {
             const amountPitched = toNumberValue(row['Amount Pitched']);
             const closureAmount = toNumberValue(row['Closure Amount']);
+            const closureDate = normalizeDateValue(row['Closure Date']);
             const closureDurationMonths = parseDurationMonths(getFirstNonEmptyField(row, [
                 'Closure Duration (In Months)',
                 'Closure Duration (Months)',
@@ -1740,9 +1741,8 @@
                 'Duration (In Months)',
                 'Duration In Months',
             ]));
-            const isClosed = toBooleanMetric(row['Closure']);
             const onboardingDate = normalizeDateValue(row['Date of Onboarding']);
-            const closureDate = normalizeDateValue(row['Closure Date']);
+            const isClosed = toBooleanMetric(row['Closure']) || Boolean(closureDate) || closureAmount > 0;
             const sellerName = normalizeText(getFirstNonEmptyField(row, ['Seller Name', 'Store Name', 'Seller', 'Account Name']));
             const status = normalizeText(getFirstNonEmptyField(row, ['Status', 'status'])) || (isClosed ? 'Closed' : '');
 
@@ -3047,11 +3047,13 @@
                     const payment = monthRows.filter(r => r.payment).length;
                     const closed = monthRows.filter(r => r.closed).length;
 
-                    // Only count closure revenue for rows with valid closureAmount and closureDurationMonths
-                    const validClosureRows = monthRows.filter(r => r.closed && Number(r.closureAmount) > 0 && Number(r.closureDurationMonths) > 0);
                     const pitchedRevenue = monthRows.reduce((sum, r) => sum + (Number(r.amountPitched) || 0), 0);
-                    const closureRevenue = validClosureRows.reduce((sum, r) => sum + (Number(r.closureAmount) || 0), 0);
-                    const mrr = closureRevenue > 0 ? closureRevenue / 12 : 0;
+                    const closureRevenue = monthRows.reduce((sum, r) => sum + (Number(r.closureAmount) || 0), 0);
+                    const mrr = monthRows.reduce((sum, r) => {
+                        const amount = Number(r.closureAmount) || 0;
+                        const durationMonths = Number(r.closureDurationMonths) || 0;
+                        return sum + (amount > 0 && durationMonths > 0 ? amount / durationMonths : 0);
+                    }, 0);
 
                     tableHTML += `
                         <tr>
